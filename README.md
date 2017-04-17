@@ -39,7 +39,7 @@ var (
 	// input = "/Users/mdouchement/tmp/hdr/rend02_oC95.hdr"
 	// input = "/Users/mdouchement/tmp/hdr/Tree_oAC1.hdr"
 	input  = "/Users/mdouchement/tmp/hdr/Apartment_float_o15C.hdr"
-	output = "/Users/fragan/tmp/hdr/output.png"
+	output = "/Users/mdouchement/tmp/hdr/output.png"
 )
 
 func main() {
