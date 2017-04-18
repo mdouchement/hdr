@@ -26,3 +26,22 @@ type ToneMappingOperator interface {
 	// Perform runs the TMO mapping.
 	Perform() (image.Image, error)
 }
+
+// Inverse pixel mapping
+func pixelBinarySearch(lum float64, lumMap []float64, lumSize int) float64 {
+	rangeLow, rangeMid, rangeUp := 0, 0, lumSize
+
+	for {
+		rangeMid = (rangeLow + rangeUp) / 2
+
+		if rangeMid == rangeLow {
+			return float64(rangeLow) // Avoid conversion by the caller.
+		}
+
+		if lum < lumMap[rangeMid] {
+			rangeUp = rangeMid
+		} else {
+			rangeLow = rangeMid
+		}
+	}
+}
