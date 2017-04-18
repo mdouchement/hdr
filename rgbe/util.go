@@ -7,10 +7,9 @@ import (
 )
 
 const (
-	header0       = "#?RADIANCE" // official
-	header1       = "#?RGBE"
-	header2       = "#?AUTOPANO"
-	WhiteEfficacy = 179.0
+	header0 = "#?RADIANCE" // official
+	header1 = "#?RGBE"
+	header2 = "#?AUTOPANO"
 )
 
 // imageMode represents the mode of the image.

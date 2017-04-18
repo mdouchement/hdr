@@ -4,14 +4,13 @@ import (
 	"image/color"
 )
 
+// Color can convert itself to alpha-premultiplied 16-bits per channel RGBA and HDR float64 RGB.
+// The conversion may be lossy.
 type Color interface {
 	color.Color
 
-	// HDRRGBA returns the alpha-premultiplied red, green, blue and alpha values
-	// for the color.
-	//
-	// An alpha-premultiplied color component c has been scaled by alpha (a),
-	// so has valid values 0 <= c <= a.
+	// HDRRGBA returns the red, green, blue and alpha values
+	// for the HDR color.
 	HDRRGBA() (r, g, b, a float64)
 }
 
@@ -20,6 +19,10 @@ type RGBE struct {
 	R, G, B float64
 }
 
+// RGBA returns the alpha-premultiplied red, green, blue and alpha values
+// for the color. Each value ranges within [0, 0xffff], but is represented
+// by a uint32 so that multiplying by a blend factor up to 0xffff will not
+// overflow.
 func (c RGBE) RGBA() (r, g, b, a uint32) {
 	// Ugly cast
 	r = uint32(c.R)
@@ -30,6 +33,8 @@ func (c RGBE) RGBA() (r, g, b, a uint32) {
 	return
 }
 
+// HDRRGBA returns the red, green, blue and alpha values
+// for the HDR color.
 func (c RGBE) HDRRGBA() (r, g, b, a float64) {
 	r, g, b = c.R, c.G, c.B
 	a = 4294967295.0 // Max uint32 in float64

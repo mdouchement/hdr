@@ -1,5 +1,9 @@
 # HDR - High Dynamic Range
 
+[![GoDoc](https://img.shields.io/badge/godoc-reference-blue.svg)](https://godoc.org/github.com/mdouchement/hdr)
+[![Go Report Card](https://goreportcard.com/badge/github.com/mdouchement/hdr)](https://goreportcard.com/report/github.com/mdouchement/hdr)
+[![License](https://img.shields.io/github/license/mdouchement/hdr.svg)](http://opensource.org/licenses/MIT)
+
 HDR is a library that handles RAW image format written with Golang.
 
 It aims to provide tools to read [HDR](https://en.wikipedia.org/wiki/High-dynamic-range_imaging) files and convert it to a LDR (Low Dynamic Range, aka PNG/JPEG/etc.) in an `image.Image` object.
@@ -11,7 +15,7 @@ It aims to provide tools to read [HDR](https://en.wikipedia.org/wiki/High-dynami
 
 ## Supported tone mapping operators
 
-- Linear (a very naive TMO implementation)
+- Linear (a naive TMO implementation)
 
 ## Usage
 
@@ -52,7 +56,7 @@ func main() {
 	fmt.Println("FName:", fname)
 
 	if hdrm, ok := m.(hdr.Image); ok {
-    // Here is the conversion from HDR to LDR.
+		// Here is the conversion from HDR to LDR.
 		lin := tmo.NewLinear(hdrm)
 		m = lin.Perform()
 	}

@@ -9,16 +9,19 @@ import (
 	"github.com/mdouchement/hdr"
 )
 
+// A Linear is a naive TMO implementation.
 type Linear struct {
 	HDRImage hdr.Image
 }
 
+// NewLinear instanciates a new Linear TMO.
 func NewLinear(m hdr.Image) *Linear {
 	return &Linear{
 		HDRImage: m,
 	}
 }
 
+// Perform runs the TMO mapping.
 func (t *Linear) Perform() image.Image {
 	imgRect := image.Rect(0, 0, t.HDRImage.Bounds().Size().X, t.HDRImage.Bounds().Size().Y)
 	img := image.NewRGBA64(imgRect)

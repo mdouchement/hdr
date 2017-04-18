@@ -34,18 +34,23 @@ type RGBE struct {
 	Rect image.Rectangle
 }
 
+// ColorModel implements Image.
 func (p *RGBE) ColorModel() color.Model { return hdrcolor.RGBEModel }
 
+// Bounds implements Image.
 func (p *RGBE) Bounds() image.Rectangle { return p.Rect }
 
+// At implements Image.
 func (p *RGBE) At(x, y int) color.Color {
 	return p.RGBEAt(x, y)
 }
 
+// HDRAt implements Image.
 func (p *RGBE) HDRAt(x, y int) hdrcolor.Color {
 	return p.RGBEAt(x, y)
 }
 
+// RGBEAt returns the RGBE color at this coordinate.
 func (p *RGBE) RGBEAt(x, y int) hdrcolor.RGBE {
 	if !(image.Point{x, y}.In(p.Rect)) {
 		return hdrcolor.RGBE{}
@@ -60,6 +65,7 @@ func (p *RGBE) PixOffset(x, y int) int {
 	return (y-p.Rect.Min.Y)*p.Stride + (x-p.Rect.Min.X)*3
 }
 
+// Set implements Image.
 func (p *RGBE) Set(x, y int, c color.Color) {
 	if !(image.Point{x, y}.In(p.Rect)) {
 		return
@@ -72,6 +78,7 @@ func (p *RGBE) Set(x, y int, c color.Color) {
 	p.Pix[i+2] = c1.B
 }
 
+// SetRGBE applies the given RGBE color at this coordinate.
 func (p *RGBE) SetRGBE(x, y int, c hdrcolor.RGBE) {
 	if !(image.Point{x, y}.In(p.Rect)) {
 		return
