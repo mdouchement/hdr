@@ -21,7 +21,7 @@ func NewLinear(m hdr.Image) *Linear {
 
 func (t *Linear) Perform() image.Image {
 	imgRect := image.Rect(0, 0, t.HDRImage.Bounds().Size().X, t.HDRImage.Bounds().Size().Y)
-	img := image.NewRGBA(imgRect)
+	img := image.NewRGBA64(imgRect)
 
 	rmm, gmm, bmm := t.minmax()
 
@@ -47,23 +47,23 @@ func (t *Linear) minmax() (rmm, gmm, bmm *minmax) {
 	return
 }
 
-func (t *Linear) shiftRescale(img *image.RGBA, rmm, gmm, bmm *minmax) {
+func (t *Linear) shiftRescale(img *image.RGBA64, rmm, gmm, bmm *minmax) {
 	for y := 0; y < t.HDRImage.Bounds().Size().Y; y++ {
 		for x := 0; x < t.HDRImage.Bounds().Size().X; x++ {
 			pixel := t.HDRImage.HDRAt(x, y)
 			r, g, b, _ := pixel.HDRRGBA()
 
-			img.SetRGBA(x, y, color.RGBA{
+			img.SetRGBA64(x, y, color.RGBA64{
 				R: shiftRescale(r, rmm),
 				G: shiftRescale(g, gmm),
 				B: shiftRescale(b, bmm),
-				A: 255,
+				A: RangeMax,
 			})
 		}
 	}
 }
 
-func shiftRescale(channel float64, mm *minmax) uint8 {
+func shiftRescale(channel float64, mm *minmax) uint16 {
 	var v float64
 
 	if channel < 0 {
@@ -72,7 +72,7 @@ func shiftRescale(channel float64, mm *minmax) uint8 {
 		v = RangeMax * (channel - mm.min) / (mm.max - mm.min)
 	}
 
-	return uint8(v)
+	return uint16(v)
 }
 
 //--------------------------------------//

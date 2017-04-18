@@ -25,14 +25,14 @@ func (c RGBE) RGBA() (r, g, b, a uint32) {
 	r = uint32(c.R)
 	g = uint32(c.G)
 	b = uint32(c.B)
-	a = 255
+	a = 4294967295 // Max uint32
 
 	return
 }
 
 func (c RGBE) HDRRGBA() (r, g, b, a float64) {
 	r, g, b = c.R, c.G, c.B
-	a = 255.0
+	a = 4294967295.0 // Max uint32 in float64
 
 	return
 }
@@ -51,10 +51,10 @@ func rgbeModel(c color.Color) color.Color {
 	if hdrc, ok := c.(Color); ok {
 		// HDR color
 		r, g, b, _ := hdrc.HDRRGBA()
-		return RGBE{r, g, b}
+		return RGBE{R: r, G: g, B: b}
 	}
 
 	// LDR color
 	r, g, b, _ := c.RGBA()
-	return RGBE{float64(r), float64(g), float64(b)}
+	return RGBE{R: float64(r), G: float64(g), B: float64(b)}
 }

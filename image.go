@@ -51,7 +51,7 @@ func (p *RGBE) RGBEAt(x, y int) hdrcolor.RGBE {
 		return hdrcolor.RGBE{}
 	}
 	i := p.PixOffset(x, y)
-	return hdrcolor.RGBE{p.Pix[i+0], p.Pix[i+1], p.Pix[i+2]}
+	return hdrcolor.RGBE{R: p.Pix[i+0], G: p.Pix[i+1], B: p.Pix[i+2]}
 }
 
 // PixOffset returns the index of the first element of Pix that corresponds to

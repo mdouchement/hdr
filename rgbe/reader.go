@@ -132,7 +132,7 @@ func (d *decoder) decode(dst image.Image, y int, scanline []byte) {
 		switch d.mode {
 		case mRGBE:
 			img := dst.(*hdr.RGBE)
-			img.SetRGBE(x, y, hdrcolor.RGBE{r, g, b})
+			img.SetRGBE(x, y, hdrcolor.RGBE{R: r, G: g, B: b})
 		}
 	}
 }
@@ -149,7 +149,7 @@ func (d *decoder) decodeRLE(dst image.Image, y int, scanline []byte) {
 		switch d.mode {
 		case mRGBE:
 			img := dst.(*hdr.RGBE)
-			img.SetRGBE(x, y, hdrcolor.RGBE{r, g, b})
+			img.SetRGBE(x, y, hdrcolor.RGBE{R: r, G: g, B: b})
 		}
 	}
 }
