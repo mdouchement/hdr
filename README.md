@@ -16,6 +16,7 @@ It aims to provide tools to read [HDR](https://en.wikipedia.org/wiki/High-dynami
 ## Supported tone mapping operators
 
 - Linear (a naive TMO implementation)
+- Reinhard '05 Tone Mapping Operator
 
 ## Usage
 
@@ -31,6 +32,8 @@ import (
 	"image"
 	"image/png"
 	"os"
+	"runtime"
+	"time"
 
 	"github.com/mdouchement/hdr"
 	_ "github.com/mdouchement/hdr/rgbe"
@@ -47,24 +50,35 @@ var (
 )
 
 func main() {
+	fmt.Printf("Using %d CPUs\n", runtime.NumCPU())
+
 	fi, err := os.Open(input)
 	check(err)
 	defer fi.Close()
 
+	start := time.Now()
+
 	m, fname, err := image.Decode(fi)
 	check(err)
-	fmt.Println("FName:", fname)
+
+	fmt.Printf("Read image (%s) took %v\n", fname, time.Since(start))
 
 	if hdrm, ok := m.(hdr.Image); ok {
-		// Here is the conversion from HDR to LDR.
-		lin := tmo.NewLinear(hdrm)
-		m = lin.Perform()
+		startTMO := time.Now()
+
+		// t := tmo.NewLinear(hdrm)
+		t := tmo.NewDefaultReinhard05(hdrm)
+		m = t.Perform()
+
+		fmt.Println("Apply TMO took", time.Since(startTMO))
 	}
 
 	fo, err := os.Create(output)
 	check(err)
 
 	png.Encode(fo, m)
+
+	fmt.Println("Total", time.Since(start))
 }
 
 func check(err error) {
