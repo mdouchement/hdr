@@ -187,8 +187,6 @@ func (t *Reinhard05) tonemap(tmp *hdr.RGBE) (minCol, maxCol float64) {
 			maxCol = math.Max(maxCol, col)
 		}
 	}
-
-	return
 }
 
 func (t *Reinhard05) normalize(img *image.RGBA64, tmp *hdr.RGBE, minCol, maxCol float64) {
