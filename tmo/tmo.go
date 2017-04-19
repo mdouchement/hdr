@@ -6,6 +6,8 @@ import (
 	"math"
 	"runtime"
 	"sync"
+
+	"github.com/mdouchement/hdr"
 )
 
 const (
@@ -42,7 +44,7 @@ func parallel(width, height int, f func(x1, y1, x2, y2 int)) chan struct{} {
 	wg := &sync.WaitGroup{}
 	completed := make(chan struct{})
 
-	for _, rect := range split(0, 0, width, height) {
+	for _, rect := range hdr.Split(0, 0, width, height, ncpu) {
 		wg.Add(1)
 		go func(rect image.Rectangle) {
 			defer wg.Done()
@@ -79,50 +81,50 @@ func pixelBinarySearch(lum float64, lumMap []float64, lumSize int) float64 {
 	}
 }
 
-// split image
-func split(x1, y1, x2, y2 int) []image.Rectangle {
-	switch ncpu {
-	case 2:
-		ym := (y1 + y2) / 2
-		return []image.Rectangle{
-			{image.Point{x1, y1}, image.Point{x2, ym}},
-			{image.Point{x1, ym}, image.Point{x2, y2}},
-		}
-	case 4:
-		xm := (x1 + x2) / 2
-		ym := (y1 + y2) / 2
-		return []image.Rectangle{
-			{image.Point{x1, y1}, image.Point{xm, ym}},
-			{image.Point{xm, y1}, image.Point{x2, ym}},
-			{image.Point{x1, ym}, image.Point{xm, y2}},
-			{image.Point{xm, ym}, image.Point{x2, y2}},
-		}
-	case 6:
-		xm := (x1 + x2) / 2
-		ym := (y1 + y2) / 3
-		return []image.Rectangle{
-			{image.Point{x1, y1}, image.Point{xm, ym}},
-			{image.Point{xm, y1}, image.Point{x2, ym}},
-			{image.Point{x1, ym}, image.Point{xm, 2 * ym}},
-			{image.Point{xm, ym}, image.Point{x2, 2 * ym}},
-			{image.Point{x1, 2 * ym}, image.Point{xm, y2}},
-			{image.Point{xm, 2 * ym}, image.Point{x2, y2}},
-		}
-	default: // 8 and more
-		xm := (x1 + x2) / 2
-		ym := (y1 + y2) / 4
-		return []image.Rectangle{
-			{image.Point{x1, y1}, image.Point{xm, ym}},
-			{image.Point{xm, y1}, image.Point{x2, ym}},
-			{image.Point{x1, ym}, image.Point{xm, 2 * ym}},
-			{image.Point{xm, ym}, image.Point{x2, 2 * ym}},
-			{image.Point{x1, 2 * ym}, image.Point{xm, 3 * ym}},
-			{image.Point{xm, 2 * ym}, image.Point{x2, 3 * ym}},
-			{image.Point{x1, 3 * ym}, image.Point{xm, y2}},
-			{image.Point{xm, 3 * ym}, image.Point{x2, y2}},
-		}
-	}
-}
+// // split image
+// func split(x1, y1, x2, y2 int) []image.Rectangle {
+// 	switch ncpu {
+// 	case 2:
+// 		ym := (y1 + y2) / 2
+// 		return []image.Rectangle{
+// 			{image.Point{x1, y1}, image.Point{x2, ym}},
+// 			{image.Point{x1, ym}, image.Point{x2, y2}},
+// 		}
+// 	case 4:
+// 		xm := (x1 + x2) / 2
+// 		ym := (y1 + y2) / 2
+// 		return []image.Rectangle{
+// 			{image.Point{x1, y1}, image.Point{xm, ym}},
+// 			{image.Point{xm, y1}, image.Point{x2, ym}},
+// 			{image.Point{x1, ym}, image.Point{xm, y2}},
+// 			{image.Point{xm, ym}, image.Point{x2, y2}},
+// 		}
+// 	case 6:
+// 		xm := (x1 + x2) / 2
+// 		ym := (y1 + y2) / 3
+// 		return []image.Rectangle{
+// 			{image.Point{x1, y1}, image.Point{xm, ym}},
+// 			{image.Point{xm, y1}, image.Point{x2, ym}},
+// 			{image.Point{x1, ym}, image.Point{xm, 2 * ym}},
+// 			{image.Point{xm, ym}, image.Point{x2, 2 * ym}},
+// 			{image.Point{x1, 2 * ym}, image.Point{xm, y2}},
+// 			{image.Point{xm, 2 * ym}, image.Point{x2, y2}},
+// 		}
+// 	default: // 8 and more
+// 		xm := (x1 + x2) / 2
+// 		ym := (y1 + y2) / 4
+// 		return []image.Rectangle{
+// 			{image.Point{x1, y1}, image.Point{xm, ym}},
+// 			{image.Point{xm, y1}, image.Point{x2, ym}},
+// 			{image.Point{x1, ym}, image.Point{xm, 2 * ym}},
+// 			{image.Point{xm, ym}, image.Point{x2, 2 * ym}},
+// 			{image.Point{x1, 2 * ym}, image.Point{xm, 3 * ym}},
+// 			{image.Point{xm, 2 * ym}, image.Point{x2, 3 * ym}},
+// 			{image.Point{x1, 3 * ym}, image.Point{xm, y2}},
+// 			{image.Point{xm, 3 * ym}, image.Point{x2, y2}},
+// 		}
+// 	}
+// }
 
 //--------------------------------------//
 // MinMax data                          //
