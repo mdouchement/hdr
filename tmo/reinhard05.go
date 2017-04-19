@@ -120,50 +120,71 @@ func (t *Reinhard05) tonemap(tmp *hdr.RGBE) (minCol, maxCol float64) {
 
 	minCol = 1.0
 	maxCol = 0.0
+	minCh := make(chan float64)
+	maxCh := make(chan float64)
 
-	for y := 0; y < t.HDRImage.Bounds().Size().Y; y++ {
-		for x := 0; x < t.HDRImage.Bounds().Size().X; x++ {
-			pixel := t.HDRImage.HDRAt(x, y)
-			r, g, b, _ := pixel.HDRRGBA()
+	completed := parallel(t.HDRImage.Bounds().Size().X, t.HDRImage.Bounds().Size().Y, func(x1, y1, x2, y2 int) {
+		min := 1.0
+		max := 0.0
 
-			_, lum, _ := colorful.Color{R: r, G: g, B: b}.Xyz() // Get luminance (Y) from the CIE XYZ-space.
+		for y := y1; y < y2; y++ {
+			for x := x1; x < x2; x++ {
+				pixel := t.HDRImage.HDRAt(x, y)
+				r, g, b, _ := pixel.HDRRGBA()
 
-			var col float64
-			p := hdrcolor.RGBE{}
+				_, lum, _ := colorful.Color{R: r, G: g, B: b}.Xyz() // Get luminance (Y) from the CIE XYZ-space.
 
-			if lum != 0.0 {
-				for c := 0; c < 3; c++ {
-					switch c {
-					case 0:
-						col = r
-					case 1:
-						col = g
-					case 2:
-						col = b
+				var col float64
+				p := hdrcolor.RGBE{}
+
+				if lum != 0.0 {
+					for c := 0; c < 3; c++ {
+						switch c {
+						case 0:
+							col = r
+						case 1:
+							col = g
+						case 2:
+							col = b
+						}
+
+						if col != 0.0 {
+							il := t.Chromatic*col + (1-t.Chromatic)*lum
+							ig := t.Chromatic*t.cav[c] + (1-t.Chromatic)*t.lav
+							ia := t.Light*il + (1-t.Light)*ig
+							col /= col + math.Pow(f*ia, m)
+						}
+
+						min = math.Min(min, col)
+						max = math.Max(max, col)
+
+						switch c {
+						case 0:
+							p.R = col
+						case 1:
+							p.G = col
+						case 2:
+							p.B = col
+						}
 					}
 
-					if col != 0.0 {
-						il := t.Chromatic*col + (1-t.Chromatic)*lum
-						ig := t.Chromatic*t.cav[c] + (1-t.Chromatic)*t.lav
-						ia := t.Light*il + (1-t.Light)*ig
-						col /= col + math.Pow(f*ia, m)
-					}
-
-					minCol = math.Min(minCol, col)
-					maxCol = math.Max(maxCol, col)
-
-					switch c {
-					case 0:
-						p.R = col
-					case 1:
-						p.G = col
-					case 2:
-						p.B = col
-					}
+					tmp.SetRGBE(x, y, p)
 				}
-
-				tmp.SetRGBE(x, y, p)
 			}
+		}
+
+		minCh <- min
+		maxCh <- max
+	})
+
+	for {
+		select {
+		case <-completed:
+			return
+		case col := <-minCh:
+			minCol = math.Min(minCol, col)
+		case col := <-maxCh:
+			maxCol = math.Max(maxCol, col)
 		}
 	}
 
@@ -171,19 +192,23 @@ func (t *Reinhard05) tonemap(tmp *hdr.RGBE) (minCol, maxCol float64) {
 }
 
 func (t *Reinhard05) normalize(img *image.RGBA64, tmp *hdr.RGBE, minCol, maxCol float64) {
-	for y := 0; y < t.HDRImage.Bounds().Size().Y; y++ {
-		for x := 0; x < t.HDRImage.Bounds().Size().X; x++ {
-			pixel := t.HDRImage.HDRAt(x, y)
-			r, g, b, _ := pixel.HDRRGBA()
+	completed := parallel(t.HDRImage.Bounds().Size().X, t.HDRImage.Bounds().Size().Y, func(x1, y1, x2, y2 int) {
+		for y := y1; y < y2; y++ {
+			for x := x1; x < x2; x++ {
+				pixel := t.HDRImage.HDRAt(x, y)
+				r, g, b, _ := pixel.HDRRGBA()
 
-			img.SetRGBA64(x, y, color.RGBA64{
-				R: t.nrmz(r, minCol, maxCol),
-				G: t.nrmz(g, minCol, maxCol),
-				B: t.nrmz(b, minCol, maxCol),
-				A: RangeMax,
-			})
+				img.SetRGBA64(x, y, color.RGBA64{
+					R: t.nrmz(r, minCol, maxCol),
+					G: t.nrmz(g, minCol, maxCol),
+					B: t.nrmz(b, minCol, maxCol),
+					A: RangeMax,
+				})
+			}
 		}
-	}
+	})
+
+	<-completed
 }
 
 // normalize one channel
