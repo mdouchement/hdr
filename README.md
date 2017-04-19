@@ -15,10 +15,14 @@ It aims to provide tools to read [HDR](https://en.wikipedia.org/wiki/High-dynami
 
 ## Supported tone mapping operators
 
+Read this [documentation](http://osp.wikidot.com/parameters-for-photographers) to find what TMO use.
+
+Read this [documentation](https://hal.archives-ouvertes.fr/hal-00724931/document) to understand what is a TMO.
+
 - Linear
 - Logarithmic
-- Drago '03			(Adaptive Logarithmic Mapping For Displaying High Contrast Scenes)
-- Reinhard '05
+- Drago '03    - Adaptive logarithmic mapping for displaying high contrast scenes
+- Reinhard '05 - Photographic tone reproduction for digital images
 
 ## Usage
 

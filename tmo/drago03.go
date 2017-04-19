@@ -10,7 +10,10 @@ import (
 	"github.com/mdouchement/hdr"
 )
 
-// A Drago03 is an adaptive Drago03 TMO.
+// A Drago03 is an adaptive TMO implementation based on Frederic Drago's 2003 white paper.
+//
+// Reference:
+// http://resources.mpi-inf.mpg.de/tmo/logmap/
 type Drago03 struct {
 	HDRImage hdr.Image
 	Bias     float64
@@ -23,7 +26,7 @@ type Drago03 struct {
 
 // NewDefaultDrago03 instanciates a new Drago03 TMO with default parameters.
 func NewDefaultDrago03(m hdr.Image) *Drago03 {
-	return NewDrago03(m, 0)
+	return NewDrago03(m, 0.5)
 }
 
 // NewDrago03 instanciates a new Drago03 TMO.
