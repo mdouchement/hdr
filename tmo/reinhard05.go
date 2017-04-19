@@ -12,7 +12,7 @@ import (
 )
 
 const (
-	gamma = 1.8
+	reinhardGamma = 1.8
 )
 
 // A Reinhard05 is a TMO implementation based on Erik Reinhard's 2005 white paper.
@@ -206,7 +206,7 @@ func (t *Reinhard05) nrmz(channel, minCol, maxCol float64) uint16 {
 
 	// Gamma correction
 	if channel > RangeMin {
-		channel = math.Pow(channel, 1/gamma)
+		channel = math.Pow(channel, 1/reinhardGamma)
 	}
 
 	// Inverse pixel mapping

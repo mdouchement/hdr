@@ -26,7 +26,7 @@ var (
 )
 
 func init() {
-	runtime.GOMAXPROCS(ncpu)
+	runtime.GOMAXPROCS(0)
 
 	LumPixFloor = make([]float64, LumSize)
 	for p := 1; p < LumSize; p++ {
