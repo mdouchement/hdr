@@ -16,15 +16,15 @@ type Image interface {
 	HDRAt(x, y int) hdrcolor.Color
 }
 
-// NewRGBE returns a new RGBE image with the given bounds.
-func NewRGBE(r image.Rectangle) *RGBE {
+// NewRGB returns a new HDR RGB image with the given bounds.
+func NewRGB(r image.Rectangle) *RGB {
 	w, h := r.Dx(), r.Dy()
 	buf := make([]float64, 3*w*h)
-	return &RGBE{buf, 3 * w, r}
+	return &RGB{buf, 3 * w, r}
 }
 
-// RGBE is an in-memory image whose At method returns hdrcolor.RGBE values.
-type RGBE struct {
+// RGB is an in-memory image whose At method returns hdrcolor.RGBE values.
+type RGB struct {
 	// Pix holds the image's pixels, in R, G, B order. The pixel at
 	// (x, y) starts at Pix[(y-Rect.Min.Y)*Stride + (x-Rect.Min.X)*8].
 	Pix []float64
@@ -35,51 +35,51 @@ type RGBE struct {
 }
 
 // ColorModel implements Image.
-func (p *RGBE) ColorModel() color.Model { return hdrcolor.RGBEModel }
+func (p *RGB) ColorModel() color.Model { return hdrcolor.RGBModel }
 
 // Bounds implements Image.
-func (p *RGBE) Bounds() image.Rectangle { return p.Rect }
+func (p *RGB) Bounds() image.Rectangle { return p.Rect }
 
 // At implements Image.
-func (p *RGBE) At(x, y int) color.Color {
-	return p.RGBEAt(x, y)
+func (p *RGB) At(x, y int) color.Color {
+	return p.RGBAt(x, y)
 }
 
 // HDRAt implements Image.
-func (p *RGBE) HDRAt(x, y int) hdrcolor.Color {
-	return p.RGBEAt(x, y)
+func (p *RGB) HDRAt(x, y int) hdrcolor.Color {
+	return p.RGBAt(x, y)
 }
 
-// RGBEAt returns the RGBE color at this coordinate.
-func (p *RGBE) RGBEAt(x, y int) hdrcolor.RGBE {
+// RGBAt returns the RGB color at this coordinate.
+func (p *RGB) RGBAt(x, y int) hdrcolor.RGB {
 	if !(image.Point{x, y}.In(p.Rect)) {
-		return hdrcolor.RGBE{}
+		return hdrcolor.RGB{}
 	}
 	i := p.PixOffset(x, y)
-	return hdrcolor.RGBE{R: p.Pix[i+0], G: p.Pix[i+1], B: p.Pix[i+2]}
+	return hdrcolor.RGB{R: p.Pix[i+0], G: p.Pix[i+1], B: p.Pix[i+2]}
 }
 
 // PixOffset returns the index of the first element of Pix that corresponds to
 // the pixel at (x, y).
-func (p *RGBE) PixOffset(x, y int) int {
+func (p *RGB) PixOffset(x, y int) int {
 	return (y-p.Rect.Min.Y)*p.Stride + (x-p.Rect.Min.X)*3
 }
 
 // Set implements Image.
-func (p *RGBE) Set(x, y int, c color.Color) {
+func (p *RGB) Set(x, y int, c color.Color) {
 	if !(image.Point{x, y}.In(p.Rect)) {
 		return
 	}
 	i := p.PixOffset(x, y)
 
-	c1 := hdrcolor.RGBEModel.Convert(c).(hdrcolor.RGBE)
+	c1 := hdrcolor.RGBModel.Convert(c).(hdrcolor.RGB)
 	p.Pix[i+0] = c1.R
 	p.Pix[i+1] = c1.G
 	p.Pix[i+2] = c1.B
 }
 
-// SetRGBE applies the given RGBE color at this coordinate.
-func (p *RGBE) SetRGBE(x, y int, c hdrcolor.RGBE) {
+// SetRGB applies the given RGB color at this coordinate.
+func (p *RGB) SetRGB(x, y int, c hdrcolor.RGB) {
 	if !(image.Point{x, y}.In(p.Rect)) {
 		return
 	}

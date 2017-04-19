@@ -73,7 +73,7 @@ func (t *Reinhard05) Perform() image.Image {
 
 	t.lumOnce.Do(t.luminance) // First pass
 
-	tmp := hdr.NewRGBE(imgRect)
+	tmp := hdr.NewRGB(imgRect)
 	minCol, maxCol := t.tonemap(tmp) // Second pass
 
 	t.normalize(img, tmp, minCol, maxCol) // Third pass
@@ -110,7 +110,7 @@ func (t *Reinhard05) luminance() {
 	t.maxLum = math.Log(t.maxLum)
 }
 
-func (t *Reinhard05) tonemap(tmp *hdr.RGBE) (minCol, maxCol float64) {
+func (t *Reinhard05) tonemap(tmp *hdr.RGB) (minCol, maxCol float64) {
 	// Image key
 	k := (t.maxLum - t.worldLum) / (t.maxLum - t.minLum)
 	// Image contrast based on key value
@@ -135,7 +135,7 @@ func (t *Reinhard05) tonemap(tmp *hdr.RGBE) (minCol, maxCol float64) {
 				_, lum, _ := colorful.Color{R: r, G: g, B: b}.Xyz() // Get luminance (Y) from the CIE XYZ-space.
 
 				var col float64
-				p := hdrcolor.RGBE{}
+				p := hdrcolor.RGB{}
 
 				if lum != 0.0 {
 					for c := 0; c < 3; c++ {
@@ -168,7 +168,7 @@ func (t *Reinhard05) tonemap(tmp *hdr.RGBE) (minCol, maxCol float64) {
 						}
 					}
 
-					tmp.SetRGBE(x, y, p)
+					tmp.SetRGB(x, y, p)
 				}
 			}
 		}
@@ -189,7 +189,7 @@ func (t *Reinhard05) tonemap(tmp *hdr.RGBE) (minCol, maxCol float64) {
 	}
 }
 
-func (t *Reinhard05) normalize(img *image.RGBA64, tmp *hdr.RGBE, minCol, maxCol float64) {
+func (t *Reinhard05) normalize(img *image.RGBA64, tmp *hdr.RGB, minCol, maxCol float64) {
 	completed := parallel(t.HDRImage.Bounds().Size().X, t.HDRImage.Bounds().Size().Y, func(x1, y1, x2, y2 int) {
 		for y := y1; y < y2; y++ {
 			for x := x1; x < x2; x++ {

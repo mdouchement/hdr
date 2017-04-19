@@ -14,8 +14,8 @@ type Color interface {
 	HDRRGBA() (r, g, b, a float64)
 }
 
-// RGBE represents a HDR color.
-type RGBE struct {
+// RGB represents a HDR color in RGB color-space.
+type RGB struct {
 	R, G, B float64
 }
 
@@ -23,7 +23,7 @@ type RGBE struct {
 // for the color. Each value ranges within [0, 0xffff], but is represented
 // by a uint32 so that multiplying by a blend factor up to 0xffff will not
 // overflow.
-func (c RGBE) RGBA() (r, g, b, a uint32) {
+func (c RGB) RGBA() (r, g, b, a uint32) {
 	// Ugly cast
 	r = uint32(c.R)
 	g = uint32(c.G)
@@ -35,7 +35,7 @@ func (c RGBE) RGBA() (r, g, b, a uint32) {
 
 // HDRRGBA returns the red, green, blue and alpha values
 // for the HDR color.
-func (c RGBE) HDRRGBA() (r, g, b, a float64) {
+func (c RGB) HDRRGBA() (r, g, b, a float64) {
 	r, g, b = c.R, c.G, c.B
 	a = 4294967295.0 // Max uint32 in float64
 
@@ -44,22 +44,22 @@ func (c RGBE) HDRRGBA() (r, g, b, a float64) {
 
 // Models for the standard color types.
 var (
-	RGBEModel color.Model = color.ModelFunc(rgbeModel)
+	RGBModel color.Model = color.ModelFunc(rgbModel)
 )
 
-func rgbeModel(c color.Color) color.Color {
-	if _, ok := c.(RGBE); ok {
-		// Already RGBE
+func rgbModel(c color.Color) color.Color {
+	if _, ok := c.(RGB); ok {
+		// Already RGB
 		return c
 	}
 
 	if hdrc, ok := c.(Color); ok {
 		// HDR color
 		r, g, b, _ := hdrc.HDRRGBA()
-		return RGBE{R: r, G: g, B: b}
+		return RGB{R: r, G: g, B: b}
 	}
 
 	// LDR color
 	r, g, b, _ := c.RGBA()
-	return RGBE{R: float64(r), G: float64(g), B: float64(b)}
+	return RGB{R: float64(r), G: float64(g), B: float64(b)}
 }

@@ -62,10 +62,10 @@ func parallel(width, height int, f func(x1, y1, x2, y2 int)) chan struct{} {
 
 // Inverse pixel mapping
 func pixelBinarySearch(lum float64, lumMap []float64, lumSize int) float64 {
-	rangeLow, rangeMid, rangeUp := 0, 0, lumSize
+	rangeLow, rangeUp := 0, lumSize
 
 	for {
-		rangeMid = (rangeLow + rangeUp) / 2
+		rangeMid := (rangeLow + rangeUp) / 2
 
 		if rangeMid == rangeLow {
 			return float64(rangeLow) // Avoid conversion by the caller.

@@ -82,7 +82,7 @@ func (d *decoder) parseHeader() error {
 		if token == "FORMAT=32-bit_rle_rgbe" {
 			// Header found
 			d.mode = mRGBE
-			d.config.ColorModel = hdrcolor.RGBEModel
+			d.config.ColorModel = hdrcolor.RGBModel
 			continue
 		}
 		if token == "FORMAT=32-bit_rle_xyze" {
@@ -131,8 +131,8 @@ func (d *decoder) decode(dst image.Image, y int, scanline []byte) {
 
 		switch d.mode {
 		case mRGBE:
-			img := dst.(*hdr.RGBE)
-			img.SetRGBE(x, y, hdrcolor.RGBE{R: r, G: g, B: b})
+			img := dst.(*hdr.RGB)
+			img.SetRGB(x, y, hdrcolor.RGB{R: r, G: g, B: b})
 		}
 	}
 }
@@ -148,8 +148,8 @@ func (d *decoder) decodeRLE(dst image.Image, y int, scanline []byte) {
 
 		switch d.mode {
 		case mRGBE:
-			img := dst.(*hdr.RGBE)
-			img.SetRGBE(x, y, hdrcolor.RGBE{R: r, G: g, B: b})
+			img := dst.(*hdr.RGB)
+			img.SetRGB(x, y, hdrcolor.RGB{R: r, G: g, B: b})
 		}
 	}
 }
@@ -230,7 +230,7 @@ func Decode(r io.Reader) (img image.Image, err error) {
 	imgRect := image.Rect(0, 0, d.config.Width, d.config.Height)
 	switch d.mode {
 	case mRGBE:
-		img = hdr.NewRGBE(imgRect)
+		img = hdr.NewRGB(imgRect)
 	default:
 		err = UnsupportedError("image mode")
 		return
