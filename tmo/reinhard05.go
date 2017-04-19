@@ -72,8 +72,8 @@ func (t *Reinhard05) Perform() image.Image {
 }
 
 func (t *Reinhard05) luminance() {
-	for y := 0; y < t.HDRImage.Bounds().Size().Y; y++ {
-		for x := 0; x < t.HDRImage.Bounds().Size().X; x++ {
+	for y := 0; y < t.HDRImage.Bounds().Dy(); y++ {
+		for x := 0; x < t.HDRImage.Bounds().Dx(); x++ {
 			pixel := t.HDRImage.HDRAt(x, y)
 			r, g, b, _ := pixel.HDRRGBA()
 
@@ -89,7 +89,7 @@ func (t *Reinhard05) luminance() {
 		}
 	}
 
-	size := float64(t.HDRImage.Bounds().Size().X * t.HDRImage.Bounds().Size().Y)
+	size := float64(t.HDRImage.Bounds().Dx() * t.HDRImage.Bounds().Dy())
 	t.worldLum /= size
 	t.cav[0] /= size
 	t.cav[1] /= size
@@ -113,7 +113,7 @@ func (t *Reinhard05) tonemap(tmp *hdr.RGB) (minCol, maxCol float64) {
 	minCh := make(chan float64)
 	maxCh := make(chan float64)
 
-	completed := parallel(t.HDRImage.Bounds().Size().X, t.HDRImage.Bounds().Size().Y, func(x1, y1, x2, y2 int) {
+	completed := parallel(t.HDRImage.Bounds().Dx(), t.HDRImage.Bounds().Dy(), func(x1, y1, x2, y2 int) {
 		min := 1.0
 		max := 0.0
 
@@ -180,7 +180,7 @@ func (t *Reinhard05) tonemap(tmp *hdr.RGB) (minCol, maxCol float64) {
 }
 
 func (t *Reinhard05) normalize(img *image.RGBA64, tmp *hdr.RGB, minCol, maxCol float64) {
-	completed := parallel(t.HDRImage.Bounds().Size().X, t.HDRImage.Bounds().Size().Y, func(x1, y1, x2, y2 int) {
+	completed := parallel(t.HDRImage.Bounds().Dx(), t.HDRImage.Bounds().Dy(), func(x1, y1, x2, y2 int) {
 		for y := y1; y < y2; y++ {
 			for x := x1; x < x2; x++ {
 				pixel := t.HDRImage.HDRAt(x, y)
@@ -205,9 +205,7 @@ func (t *Reinhard05) nrmz(channel, minCol, maxCol float64) uint16 {
 	channel = (channel - minCol) / (maxCol - minCol)
 
 	// Gamma correction
-	if channel < 0 {
-		channel = 0
-	} else {
+	if channel > RangeMin {
 		channel = math.Pow(channel, 1/gamma)
 	}
 
@@ -215,9 +213,7 @@ func (t *Reinhard05) nrmz(channel, minCol, maxCol float64) uint16 {
 	channel = LinearInversePixelMapping(channel, LumPixFloor, LumSize)
 
 	// Clamp to solid black and solid white
-	if channel > RangeMax {
-		channel = RangeMax
-	}
+	channel = Clamp(channel)
 
 	return uint16(channel)
 }

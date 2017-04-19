@@ -21,7 +21,7 @@ func NewLinear(m hdr.Image) *Linear {
 
 // Perform runs the TMO mapping.
 func (t *Linear) Perform() image.Image {
-	imgRect := image.Rect(0, 0, t.HDRImage.Bounds().Size().X, t.HDRImage.Bounds().Size().Y)
+	imgRect := image.Rect(0, 0, t.HDRImage.Bounds().Dx(), t.HDRImage.Bounds().Dy())
 	img := image.NewRGBA64(imgRect)
 
 	rmm, gmm, bmm := t.minmax()
@@ -34,8 +34,8 @@ func (t *Linear) Perform() image.Image {
 func (t *Linear) minmax() (rmm, gmm, bmm *minmax) {
 	rmm, gmm, bmm = newMinMax(), newMinMax(), newMinMax()
 
-	for y := 0; y < t.HDRImage.Bounds().Size().Y; y++ {
-		for x := 0; x < t.HDRImage.Bounds().Size().X; x++ {
+	for y := 0; y < t.HDRImage.Bounds().Dy(); y++ {
+		for x := 0; x < t.HDRImage.Bounds().Dx(); x++ {
 			pixel := t.HDRImage.HDRAt(x, y)
 			r, g, b, _ := pixel.HDRRGBA()
 
@@ -49,8 +49,8 @@ func (t *Linear) minmax() (rmm, gmm, bmm *minmax) {
 }
 
 func (t *Linear) shiftRescale(img *image.RGBA64, rmm, gmm, bmm *minmax) {
-	for y := 0; y < t.HDRImage.Bounds().Size().Y; y++ {
-		for x := 0; x < t.HDRImage.Bounds().Size().X; x++ {
+	for y := 0; y < t.HDRImage.Bounds().Dy(); y++ {
+		for x := 0; x < t.HDRImage.Bounds().Dx(); x++ {
 			pixel := t.HDRImage.HDRAt(x, y)
 			r, g, b, _ := pixel.HDRRGBA()
 
@@ -65,7 +65,7 @@ func (t *Linear) shiftRescale(img *image.RGBA64, rmm, gmm, bmm *minmax) {
 }
 
 func shiftRescale(channel float64, mm *minmax) uint16 {
-	if channel < 0 {
+	if channel < RangeMin {
 		channel = RangeMax * (channel + mm.min*-1) / (mm.max + (mm.min * -1))
 	} else {
 		channel = RangeMax * (channel - mm.min) / (mm.max - mm.min)

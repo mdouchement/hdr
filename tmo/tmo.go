@@ -94,6 +94,17 @@ func LinearInversePixelMapping(lum float64, lumMap []float64, lumSize int) float
 	}
 }
 
+// Clamp to solid black and solid white.
+func Clamp(channel float64) float64 {
+	if channel < RangeMin {
+		channel = RangeMin
+	}
+	if channel > RangeMax {
+		channel = RangeMax
+	}
+	return channel
+}
+
 //--------------------------------------//
 // MinMax data                          //
 //--------------------------------------//

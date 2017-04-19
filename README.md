@@ -17,7 +17,8 @@ It aims to provide tools to read [HDR](https://en.wikipedia.org/wiki/High-dynami
 
 - Linear
 - Logarithmic
-- Reinhard '05 Tone Mapping Operator
+- Drago '03			(Adaptive Logarithmic Mapping For Displaying High Contrast Scenes)
+- Reinhard '05
 
 ## Usage
 
@@ -40,6 +41,11 @@ import (
 	_ "github.com/mdouchement/hdr/rgbe"
 	"github.com/mdouchement/hdr/tmo"
 )
+
+// Samples:
+//
+// http://www.anyhere.com/gward/hdrenc/pages/originals.html
+// http://resources.mpi-inf.mpg.de/tmo/logmap/ (High Contrast Scenes)
 
 var (
 	// input = "/Users/mdouchement/tmp/hdr/memorial_o876.hdr"
@@ -69,6 +75,7 @@ func main() {
 
 		// t := tmo.NewLinear(hdrm)
 		// t := tmo.NewLogarithmic(hdrm)
+		//t := tmo.NewDefaultDrago03(hdrm)
 		t := tmo.NewDefaultReinhard05(hdrm)
 		m = t.Perform()
 
