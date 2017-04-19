@@ -22,19 +22,17 @@ const (
 // E. Reinhard and K. Devlin.
 // In IEEE Transactions on Visualization and Computer Graphics, 2005.
 type Reinhard05 struct {
-	HDRImage    hdr.Image
-	Brightness  float64
-	Chromatic   float64
-	Light       float64
-	lumOnce     sync.Once
-	cav         []float64
-	lav         float64
-	lumSize     int
-	lumPixFloor []float64
-	minLum      float64
-	maxLum      float64
-	worldLum    float64
-	gama        float64
+	HDRImage   hdr.Image
+	Brightness float64
+	Chromatic  float64
+	Light      float64
+	lumOnce    sync.Once
+	cav        []float64
+	lav        float64
+	minLum     float64
+	maxLum     float64
+	worldLum   float64
+	gama       float64
 }
 
 // NewDefaultReinhard05 instanciates a new Reinhard05 TMO with default parameters.
@@ -44,26 +42,18 @@ func NewDefaultReinhard05(m hdr.Image) *Reinhard05 {
 
 // NewReinhard05 instanciates a new Reinhard05 TMO.
 func NewReinhard05(m hdr.Image, brightness, chromatic, light float64) *Reinhard05 {
-	t := &Reinhard05{
+	return &Reinhard05{
 		HDRImage: m,
 		// Brightness is included in [-20, 20] with 0.1 increment step.
 		Brightness: brightness,
 		// Chromatic is included in [0, 1] with 0.01 increment step.
 		Chromatic: chromatic,
 		// Light is included in [0, 1] with 0.01 increment step.
-		Light:       light,
-		cav:         make([]float64, 3),
-		lumSize:     RangeMax + 3,
-		lumPixFloor: make([]float64, RangeMax+3), // lumSize
-		minLum:      math.Inf(1),
-		maxLum:      math.Inf(-1),
+		Light:  light,
+		cav:    make([]float64, 3),
+		minLum: math.Inf(1),
+		maxLum: math.Inf(-1),
 	}
-
-	for p := 1; p < t.lumSize; p++ {
-		t.lumPixFloor[p] = float64(p-1) / RangeMax
-	}
-
-	return t
 }
 
 // Perform runs the TMO mapping.
@@ -222,7 +212,7 @@ func (t *Reinhard05) nrmz(channel, minCol, maxCol float64) uint16 {
 	}
 
 	// Inverse pixel mapping
-	channel = pixelBinarySearch(channel, t.lumPixFloor, t.lumSize)
+	channel = LinearInversePixelMapping(channel, LumPixFloor, LumSize)
 
 	// Clamp to solid black and solid white
 	if channel > RangeMax {

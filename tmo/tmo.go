@@ -15,12 +15,23 @@ const (
 	RangeMin = 0
 	// RangeMax is the LDR higher boundary.
 	RangeMax = 65535 // max uint16
+	// LumSize defines the luminance range [0, LumSize]
+	LumSize = RangeMax + 3
 )
 
-var ncpu = runtime.NumCPU()
+var (
+	// LumPixFloor is the default lunMap maping for LinearInversePixelMapping func.
+	LumPixFloor []float64
+	ncpu        = runtime.NumCPU()
+)
 
 func init() {
 	runtime.GOMAXPROCS(ncpu)
+
+	LumPixFloor = make([]float64, LumSize)
+	for p := 1; p < LumSize; p++ {
+		LumPixFloor[p] = float64(p-1) / RangeMax
+	}
 }
 
 // A ToneMappingOperator is an algorithm that converts hdr.Image to image.Image.
@@ -62,8 +73,10 @@ func parallel(width, height int, f func(x1, y1, x2, y2 int)) chan struct{} {
 	return completed
 }
 
-// Inverse pixel mapping
-func pixelBinarySearch(lum float64, lumMap []float64, lumSize int) float64 {
+// LinearInversePixelMapping is an linear inverse pixel mapping.
+// It is preference to have slightly more solid black 0 and solid white RangeMax in spectrum
+// by stretching a mapping.
+func LinearInversePixelMapping(lum float64, lumMap []float64, lumSize int) float64 {
 	rangeLow, rangeUp := 0, lumSize
 
 	for {
@@ -80,51 +93,6 @@ func pixelBinarySearch(lum float64, lumMap []float64, lumSize int) float64 {
 		}
 	}
 }
-
-// // split image
-// func split(x1, y1, x2, y2 int) []image.Rectangle {
-// 	switch ncpu {
-// 	case 2:
-// 		ym := (y1 + y2) / 2
-// 		return []image.Rectangle{
-// 			{image.Point{x1, y1}, image.Point{x2, ym}},
-// 			{image.Point{x1, ym}, image.Point{x2, y2}},
-// 		}
-// 	case 4:
-// 		xm := (x1 + x2) / 2
-// 		ym := (y1 + y2) / 2
-// 		return []image.Rectangle{
-// 			{image.Point{x1, y1}, image.Point{xm, ym}},
-// 			{image.Point{xm, y1}, image.Point{x2, ym}},
-// 			{image.Point{x1, ym}, image.Point{xm, y2}},
-// 			{image.Point{xm, ym}, image.Point{x2, y2}},
-// 		}
-// 	case 6:
-// 		xm := (x1 + x2) / 2
-// 		ym := (y1 + y2) / 3
-// 		return []image.Rectangle{
-// 			{image.Point{x1, y1}, image.Point{xm, ym}},
-// 			{image.Point{xm, y1}, image.Point{x2, ym}},
-// 			{image.Point{x1, ym}, image.Point{xm, 2 * ym}},
-// 			{image.Point{xm, ym}, image.Point{x2, 2 * ym}},
-// 			{image.Point{x1, 2 * ym}, image.Point{xm, y2}},
-// 			{image.Point{xm, 2 * ym}, image.Point{x2, y2}},
-// 		}
-// 	default: // 8 and more
-// 		xm := (x1 + x2) / 2
-// 		ym := (y1 + y2) / 4
-// 		return []image.Rectangle{
-// 			{image.Point{x1, y1}, image.Point{xm, ym}},
-// 			{image.Point{xm, y1}, image.Point{x2, ym}},
-// 			{image.Point{x1, ym}, image.Point{xm, 2 * ym}},
-// 			{image.Point{xm, ym}, image.Point{x2, 2 * ym}},
-// 			{image.Point{x1, 2 * ym}, image.Point{xm, 3 * ym}},
-// 			{image.Point{xm, 2 * ym}, image.Point{x2, 3 * ym}},
-// 			{image.Point{x1, 3 * ym}, image.Point{xm, y2}},
-// 			{image.Point{xm, 3 * ym}, image.Point{x2, y2}},
-// 		}
-// 	}
-// }
 
 //--------------------------------------//
 // MinMax data                          //
