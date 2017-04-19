@@ -1,10 +1,8 @@
 package tmo
 
 import (
-	"fmt"
 	"image"
 	"image/color"
-	"math"
 
 	"github.com/mdouchement/hdr"
 )
@@ -67,38 +65,11 @@ func (t *Linear) shiftRescale(img *image.RGBA64, rmm, gmm, bmm *minmax) {
 }
 
 func shiftRescale(channel float64, mm *minmax) uint16 {
-	var v float64
-
 	if channel < 0 {
-		v = RangeMax * (channel + mm.min*-1) / (mm.max + (mm.min * -1))
+		channel = RangeMax * (channel + mm.min*-1) / (mm.max + (mm.min * -1))
 	} else {
-		v = RangeMax * (channel - mm.min) / (mm.max - mm.min)
+		channel = RangeMax * (channel - mm.min) / (mm.max - mm.min)
 	}
 
-	return uint16(v)
-}
-
-//--------------------------------------//
-// MinMax data                          //
-//--------------------------------------//
-
-type minmax struct {
-	min float64
-	max float64
-}
-
-func newMinMax() *minmax {
-	return &minmax{
-		min: math.Inf(1),
-		max: math.Inf(-1),
-	}
-}
-
-func (mm *minmax) update(v float64) {
-	mm.min = math.Min(mm.min, v)
-	mm.max = math.Max(mm.max, v)
-}
-
-func (mm *minmax) String() string {
-	return fmt.Sprintf("min: %f, max: %f", mm.min, mm.max)
+	return uint16(channel)
 }

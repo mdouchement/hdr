@@ -15,7 +15,8 @@ It aims to provide tools to read [HDR](https://en.wikipedia.org/wiki/High-dynami
 
 ## Supported tone mapping operators
 
-- Linear (a naive TMO implementation)
+- Linear
+- Logarithmic
 - Reinhard '05 Tone Mapping Operator
 
 ## Usage
@@ -67,6 +68,7 @@ func main() {
 		startTMO := time.Now()
 
 		// t := tmo.NewLinear(hdrm)
+		// t := tmo.NewLogarithmic(hdrm)
 		t := tmo.NewDefaultReinhard05(hdrm)
 		m = t.Perform()
 
