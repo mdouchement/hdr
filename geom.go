@@ -15,61 +15,26 @@ func SplitWithRectangle(r image.Rectangle, n int) []image.Rectangle {
 
 	var nx int
 	var ny int
+	b := true
 
-	// TODO find a function to calculate this dynamically.
-	switch n {
-	case 2:
-		fallthrough
-	case 3:
-		nx = 1 // 0 in fact but this avoid integer divide by zero error
-		ny = 2
-	case 4:
-		// Could be used for this case:
-		// sqrt := math.Sqrt(float64(n))
-		// integer, fractional := math.Modf(sqrt)
-		// if fractional == 0 { ny = nx = int(integer) }
-		fallthrough
-	case 5:
-		nx = 2
-		ny = 2
-	case 6:
-		fallthrough
-	case 7:
-		nx = 2
-		ny = 3
-	case 8:
-		nx = 2
-		ny = 4
-	case 9:
-		// Could be used for this case:
-		// sqrt := math.Sqrt(float64(n))
-		// integer, fractional := math.Modf(sqrt)
-		// if fractional == 0 { ny = nx = int(integer) }
-		nx = 3
-		ny = 3
-	case 10:
-		fallthrough
-	case 11:
-		nx = 2
-		ny = 5
-	case 12:
-		fallthrough
-	case 13:
-		nx = 3
-		ny = 4
-	case 14:
-		nx = 2
-		ny = 7
-	case 15:
-		nx = 3
-		ny = 5
-	default: // 16
-		// Could be used for this case:
-		// sqrt := math.Sqrt(float64(n))
-		// integer, fractional := math.Modf(sqrt)
-		// if fractional == 0 { ny = nx = int(integer) }
-		nx = 4
-		ny = 4
+	for y := n/3 + 1; y > 0; y-- {
+		for x := n; x > 1; x-- {
+			if x*y == n {
+				nx = x
+				ny = y
+
+				// Exit loops
+				y = 1
+				break
+			}
+			if !b && x*y < n {
+				nx = x
+				ny = y
+
+				// Try to find better combination
+				b = false
+			}
+		}
 	}
 
 	tileWidth := (r.Min.X + r.Max.X) / nx

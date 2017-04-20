@@ -26,8 +26,6 @@ var (
 )
 
 func init() {
-	runtime.GOMAXPROCS(0)
-
 	LumPixFloor = make([]float64, LumSize)
 	for p := 1; p < LumSize; p++ {
 		LumPixFloor[p] = float64(p-1) / RangeMax
