@@ -59,7 +59,7 @@ func (t *ICam06) normalize(img *hdr.XYZ) {
 	maxCh := make(chan float64)
 
 	// Find max luminance
-	completed := parallel(t.HDRImage.Bounds().Dx(), t.HDRImage.Bounds().Dy(), func(x1, y1, x2, y2 int) {
+	completed := parallelR(t.HDRImage.Bounds(), func(x1, y1, x2, y2 int) {
 		max := math.Inf(-1)
 
 		for y := y1; y < y2; y++ {
@@ -86,7 +86,7 @@ func (t *ICam06) normalize(img *hdr.XYZ) {
 	}
 
 	// Normalisation
-	completed = parallel(t.HDRImage.Bounds().Dx(), t.HDRImage.Bounds().Dy(), func(x1, y1, x2, y2 int) {
+	completed = parallelR(t.HDRImage.Bounds(), func(x1, y1, x2, y2 int) {
 		for y := y1; y < y2; y++ {
 			for x := x1; x < x2; x++ {
 				pixel := img.XYZAt(x, y)
@@ -101,7 +101,6 @@ func (t *ICam06) normalize(img *hdr.XYZ) {
 	})
 
 	<-completed
-	return
 }
 
 //================================//
