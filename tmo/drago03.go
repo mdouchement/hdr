@@ -40,8 +40,7 @@ func NewDrago03(m hdr.Image, bias float64) *Drago03 {
 
 // Perform runs the TMO mapping.
 func (t *Drago03) Perform() image.Image {
-	imgRect := image.Rect(0, 0, t.HDRImage.Bounds().Size().X, t.HDRImage.Bounds().Size().Y)
-	img := image.NewRGBA64(imgRect)
+	img := image.NewRGBA64(t.HDRImage.Bounds())
 
 	t.biasP = math.Log10(t.Bias) / math.Log(0.5)
 
@@ -52,16 +51,39 @@ func (t *Drago03) Perform() image.Image {
 }
 
 func (t *Drago03) luminance() {
-	for y := 0; y < t.HDRImage.Bounds().Dy(); y++ {
-		for x := 0; x < t.HDRImage.Bounds().Dx(); x++ {
-			pixel := t.HDRImage.HDRAt(x, y)
-			r, g, b, _ := pixel.HDRRGBA()
+	avgCh := make(chan float64)
+	maxCh := make(chan float64)
 
-			_, lum, _ := colorful.Color{R: r, G: g, B: b}.Xyz() // Get luminance (Y) from the CIE XYZ-space.
-			t.avgLum += math.Log(lum + 1e-4)
-			t.maxLum = math.Max(t.maxLum, lum)
+	completed := parallelR(t.HDRImage.Bounds(), func(x1, y1, x2, y2 int) {
+		var avg float64
+		var max float64
+
+		for y := y1; y < y2; y++ {
+			for x := x1; x < x2; x++ {
+				pixel := t.HDRImage.HDRAt(x, y)
+				r, g, b, _ := pixel.HDRRGBA()
+
+				_, lum, _ := colorful.Color{R: r, G: g, B: b}.Xyz() // Get luminance (Y) from the CIE XYZ-space.
+				avg += math.Log(lum + 1e-4)
+				max = math.Max(t.maxLum, lum)
+			}
+		}
+
+		avgCh <- avg
+		maxCh <- max
+	})
+
+	for {
+		select {
+		case <-completed:
+			goto NEXT
+		case avg := <-avgCh:
+			t.avgLum += avg
+		case max := <-maxCh:
+			t.maxLum = math.Max(t.maxLum, max)
 		}
 	}
+NEXT:
 
 	t.avgLum = math.Exp(t.avgLum / float64(t.HDRImage.Bounds().Dx()*t.HDRImage.Bounds().Dy()))
 	// Normalize
@@ -71,10 +93,10 @@ func (t *Drago03) luminance() {
 }
 
 func (t *Drago03) tonemap(img *image.RGBA64) {
-	var lumAvgRatio float64
-	var newLum float64
+	completed := parallelR(t.HDRImage.Bounds(), func(x1, y1, x2, y2 int) {
+		var lumAvgRatio float64
+		var newLum float64
 
-	completed := parallel(t.HDRImage.Bounds().Dx(), t.HDRImage.Bounds().Dy(), func(x1, y1, x2, y2 int) {
 		for y := y1; y < y2; y++ {
 			for x := x1; x < x2; x++ {
 				pixel := t.HDRImage.HDRAt(x, y)

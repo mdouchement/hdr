@@ -48,6 +48,10 @@ type ToneMappingOperator interface {
 	Perform() (image.Image, error)
 }
 
+func parallelR(r image.Rectangle, f func(x1, y1, x2, y2 int)) chan struct{} {
+	return parallel(r.Dx(), r.Dy(), f)
+}
+
 func parallel(width, height int, f func(x1, y1, x2, y2 int)) chan struct{} {
 	// FIXME use context
 	wg := &sync.WaitGroup{}

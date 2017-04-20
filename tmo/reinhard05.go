@@ -58,12 +58,11 @@ func NewReinhard05(m hdr.Image, brightness, chromatic, light float64) *Reinhard0
 
 // Perform runs the TMO mapping.
 func (t *Reinhard05) Perform() image.Image {
-	imgRect := image.Rect(0, 0, t.HDRImage.Bounds().Size().X, t.HDRImage.Bounds().Size().Y)
-	img := image.NewRGBA64(imgRect)
+	img := image.NewRGBA64(t.HDRImage.Bounds())
 
 	t.lumOnce.Do(t.luminance) // First pass
 
-	tmp := hdr.NewRGB(imgRect)
+	tmp := hdr.NewRGB(t.HDRImage.Bounds())
 	minCol, maxCol := t.tonemap(tmp) // Second pass
 
 	t.normalize(img, tmp, minCol, maxCol) // Third pass
@@ -72,22 +71,47 @@ func (t *Reinhard05) Perform() image.Image {
 }
 
 func (t *Reinhard05) luminance() {
-	for y := 0; y < t.HDRImage.Bounds().Dy(); y++ {
-		for x := 0; x < t.HDRImage.Bounds().Dx(); x++ {
-			pixel := t.HDRImage.HDRAt(x, y)
-			r, g, b, _ := pixel.HDRRGBA()
+	reinhardCh := make(chan *Reinhard05)
 
-			_, lum, _ := colorful.Color{R: r, G: g, B: b}.Xyz() // Get luminance (Y) from the CIE XYZ-space.
-			t.minLum = math.Min(t.minLum, lum)
-			t.maxLum = math.Max(t.maxLum, lum)
-			t.worldLum += math.Log((2.3e-5) + lum)
+	completed := parallelR(t.HDRImage.Bounds(), func(x1, y1, x2, y2 int) {
+		tt := NewDefaultReinhard05(nil)
 
-			t.cav[0] += r
-			t.cav[1] += g
-			t.cav[2] += b
-			t.lav += lum
+		for y := y1; y < y2; y++ {
+			for x := x1; x < x2; x++ {
+				pixel := t.HDRImage.HDRAt(x, y)
+				r, g, b, _ := pixel.HDRRGBA()
+
+				_, lum, _ := colorful.Color{R: r, G: g, B: b}.Xyz() // Get luminance (Y) from the CIE XYZ-space.
+				tt.minLum = math.Min(tt.minLum, lum)
+				tt.maxLum = math.Max(tt.maxLum, lum)
+				tt.worldLum += math.Log((2.3e-5) + lum)
+
+				tt.cav[0] += r
+				tt.cav[1] += g
+				tt.cav[2] += b
+				tt.lav += lum
+			}
+		}
+
+		reinhardCh <- tt
+	})
+
+	for {
+		select {
+		case <-completed:
+			goto NEXT
+		case tt := <-reinhardCh:
+			t.minLum = math.Min(t.minLum, tt.minLum)
+			t.maxLum = math.Max(t.maxLum, tt.maxLum)
+			t.worldLum += tt.worldLum
+
+			t.cav[0] += tt.cav[0]
+			t.cav[1] += tt.cav[1]
+			t.cav[2] += tt.cav[2]
+			t.lav += tt.lav
 		}
 	}
+NEXT:
 
 	size := float64(t.HDRImage.Bounds().Dx() * t.HDRImage.Bounds().Dy())
 	t.worldLum /= size
@@ -113,7 +137,7 @@ func (t *Reinhard05) tonemap(tmp *hdr.RGB) (minCol, maxCol float64) {
 	minCh := make(chan float64)
 	maxCh := make(chan float64)
 
-	completed := parallel(t.HDRImage.Bounds().Dx(), t.HDRImage.Bounds().Dy(), func(x1, y1, x2, y2 int) {
+	completed := parallelR(t.HDRImage.Bounds(), func(x1, y1, x2, y2 int) {
 		min := 1.0
 		max := 0.0
 
@@ -180,7 +204,7 @@ func (t *Reinhard05) tonemap(tmp *hdr.RGB) (minCol, maxCol float64) {
 }
 
 func (t *Reinhard05) normalize(img *image.RGBA64, tmp *hdr.RGB, minCol, maxCol float64) {
-	completed := parallel(t.HDRImage.Bounds().Dx(), t.HDRImage.Bounds().Dy(), func(x1, y1, x2, y2 int) {
+	completed := parallelR(t.HDRImage.Bounds(), func(x1, y1, x2, y2 int) {
 		for y := y1; y < y2; y++ {
 			for x := x1; x < x2; x++ {
 				pixel := t.HDRImage.HDRAt(x, y)

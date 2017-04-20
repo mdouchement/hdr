@@ -22,8 +22,7 @@ func NewLogarithmic(m hdr.Image) *Logarithmic {
 
 // Perform runs the TMO mapping.
 func (t *Logarithmic) Perform() image.Image {
-	imgRect := image.Rect(0, 0, t.HDRImage.Bounds().Dx(), t.HDRImage.Bounds().Dy())
-	img := image.NewRGBA64(imgRect)
+	img := image.NewRGBA64(t.HDRImage.Bounds())
 
 	rmm, gmm, bmm := t.minmax()
 
@@ -34,38 +33,63 @@ func (t *Logarithmic) Perform() image.Image {
 
 func (t *Logarithmic) minmax() (rmm, gmm, bmm *minmax) {
 	rmm, gmm, bmm = newMinMax(), newMinMax(), newMinMax()
+	mmCh := make(chan []*minmax)
 
-	for y := 0; y < t.HDRImage.Bounds().Dy(); y++ {
-		for x := 0; x < t.HDRImage.Bounds().Dx(); x++ {
-			pixel := t.HDRImage.HDRAt(x, y)
-			r, g, b, _ := pixel.HDRRGBA()
+	completed := parallelR(t.HDRImage.Bounds(), func(x1, y1, x2, y2 int) {
+		rmm, gmm, bmm := newMinMax(), newMinMax(), newMinMax()
 
-			rmm.update(r)
-			gmm.update(g)
-			bmm.update(b)
+		for y := y1; y < y2; y++ {
+			for x := x1; x < x2; x++ {
+				pixel := t.HDRImage.HDRAt(x, y)
+				r, g, b, _ := pixel.HDRRGBA()
+
+				rmm.update(r)
+				gmm.update(g)
+				bmm.update(b)
+			}
+		}
+		mmCh <- []*minmax{rmm, gmm, bmm}
+
+	})
+
+	for {
+		select {
+		case <-completed:
+			return
+		case mm := <-mmCh:
+			rmm.update(mm[0].min)
+			rmm.update(mm[0].max)
+
+			gmm.update(mm[1].min)
+			gmm.update(mm[1].max)
+
+			bmm.update(mm[2].min)
+			bmm.update(mm[2].max)
 		}
 	}
-
-	return
 }
 
 func (t *Logarithmic) shiftLogRescale(img *image.RGBA64, rmm, gmm, bmm *minmax) {
 	// Calculate max for rescale
 	rmax, gmax, bmax := logMax(rmm), logMax(gmm), logMax(bmm)
 
-	for y := 0; y < t.HDRImage.Bounds().Dy(); y++ {
-		for x := 0; x < t.HDRImage.Bounds().Dx(); x++ {
-			pixel := t.HDRImage.HDRAt(x, y)
-			r, g, b, _ := pixel.HDRRGBA()
+	completed := parallelR(t.HDRImage.Bounds(), func(x1, y1, x2, y2 int) {
+		for y := y1; y < y2; y++ {
+			for x := x1; x < x2; x++ {
+				pixel := t.HDRImage.HDRAt(x, y)
+				r, g, b, _ := pixel.HDRRGBA()
 
-			img.SetRGBA64(x, y, color.RGBA64{
-				R: shiftLogRescale(r, rmm, rmax),
-				G: shiftLogRescale(g, gmm, gmax),
-				B: shiftLogRescale(b, bmm, bmax),
-				A: RangeMax,
-			})
+				img.SetRGBA64(x, y, color.RGBA64{
+					R: shiftLogRescale(r, rmm, rmax),
+					G: shiftLogRescale(g, gmm, gmax),
+					B: shiftLogRescale(b, bmm, bmax),
+					A: RangeMax,
+				})
+			}
 		}
-	}
+	})
+
+	<-completed
 }
 
 func shiftLogRescale(channel float64, mm *minmax, max float64) uint16 {
