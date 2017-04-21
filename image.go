@@ -14,6 +14,8 @@ type Image interface {
 
 	// HDRAt returns the HDR pixel color at given coordinates.
 	HDRAt(x, y int) hdrcolor.Color
+	// Size returns the number of pixels.
+	Size() int
 }
 
 //===============//
@@ -43,6 +45,11 @@ func (p *RGB) ColorModel() color.Model { return hdrcolor.RGBModel }
 
 // Bounds implements Image.
 func (p *RGB) Bounds() image.Rectangle { return p.Rect }
+
+// Size implements Image.
+func (p *RGB) Size() int {
+	return p.Bounds().Dx() * p.Bounds().Dy()
+}
 
 // At implements Image.
 func (p *RGB) At(x, y int) color.Color {
@@ -120,6 +127,11 @@ func (p *XYZ) ColorModel() color.Model { return hdrcolor.XYZModel }
 
 // Bounds implements Image.
 func (p *XYZ) Bounds() image.Rectangle { return p.Rect }
+
+// Size implements Image.
+func (p *XYZ) Size() int {
+	return p.Bounds().Dx() * p.Bounds().Dy()
+}
 
 // At implements Image.
 func (p *XYZ) At(x, y int) color.Color {

@@ -123,7 +123,7 @@ func (t *Reinhard05) luminance() {
 	}
 NEXT:
 
-	size := float64(t.HDRImage.Bounds().Dx() * t.HDRImage.Bounds().Dy())
+	size := float64(t.HDRImage.Size())
 	t.worldLum /= size
 	t.cav[0] /= size
 	t.cav[1] /= size
