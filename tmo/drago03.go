@@ -85,7 +85,7 @@ func (t *Drago03) luminance() {
 	}
 NEXT:
 
-	t.avgLum = math.Exp(t.avgLum / float64(t.HDRImage.Size())
+	t.avgLum = math.Exp(t.avgLum / float64(t.HDRImage.Size()))
 	// Normalize
 	t.maxLum = t.maxLum / t.avgLum
 	// Set divider
