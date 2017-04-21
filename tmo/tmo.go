@@ -107,6 +107,14 @@ func Clamp(channel float64) float64 {
 	return channel
 }
 
+// WoB returns 1.0 if b is true, else 0.0
+func WoB(b bool) float64 {
+	if b {
+		return 1
+	}
+	return 0
+}
+
 //--------------------------------------//
 // MinMax data                          //
 //--------------------------------------//
