@@ -32,6 +32,9 @@ type Reinhard05 struct {
 	minLum     float64
 	maxLum     float64
 	worldLum   float64
+	k          float64
+	m          float64
+	f          float64
 	gama       float64
 }
 
@@ -63,9 +66,9 @@ func (t *Reinhard05) Perform() image.Image {
 	t.lumOnce.Do(t.luminance) // First pass
 
 	tmp := hdr.NewRGB(t.HDRImage.Bounds())
-	minCol, maxCol := t.tonemap(tmp) // Second pass
+	minSample, maxSample := t.tonemap(tmp) // Second pass
 
-	t.normalize(img, tmp, minCol, maxCol) // Third pass
+	t.normalize(img, tmp, minSample, maxSample) // Third pass
 
 	return img
 }
@@ -122,18 +125,18 @@ NEXT:
 
 	t.minLum = math.Log(t.minLum)
 	t.maxLum = math.Log(t.maxLum)
+
+	// Image key
+	t.k = (t.maxLum - t.worldLum) / (t.maxLum - t.minLum)
+	// Image contrast based on key value
+	t.m = (0.3 + (0.7 * math.Pow(t.k, 1.4)))
+	// Image brightness
+	t.f = math.Exp(-t.Brightness)
 }
 
-func (t *Reinhard05) tonemap(tmp *hdr.RGB) (minCol, maxCol float64) {
-	// Image key
-	k := (t.maxLum - t.worldLum) / (t.maxLum - t.minLum)
-	// Image contrast based on key value
-	m := (0.3 + (0.7 * math.Pow(k, 1.4)))
-	// Image brightness
-	f := math.Exp(-t.Brightness)
-
-	minCol = 1.0
-	maxCol = 0.0
+func (t *Reinhard05) tonemap(tmp *hdr.RGB) (minSample, maxSample float64) {
+	minSample = 1.0
+	maxSample = 0.0
 	minCh := make(chan float64)
 	maxCh := make(chan float64)
 
@@ -148,39 +151,24 @@ func (t *Reinhard05) tonemap(tmp *hdr.RGB) (minCol, maxCol float64) {
 
 				_, lum, _ := colorful.Color{R: r, G: g, B: b}.Xyz() // Get luminance (Y) from the CIE XYZ-space.
 
-				var col float64
+				var sample float64
 				p := hdrcolor.RGB{}
 
 				if lum != 0.0 {
-					for c := 0; c < 3; c++ {
-						switch c {
-						case 0:
-							col = r
-						case 1:
-							col = g
-						case 2:
-							col = b
-						}
+					sample = t.sampling(r, lum, 0)
+					min = math.Min(min, sample)
+					max = math.Max(max, sample)
+					p.R = sample
 
-						if col != 0.0 {
-							il := t.Chromatic*col + (1-t.Chromatic)*lum
-							ig := t.Chromatic*t.cav[c] + (1-t.Chromatic)*t.lav
-							ia := t.Light*il + (1-t.Light)*ig
-							col /= col + math.Pow(f*ia, m)
-						}
+					sample = t.sampling(g, lum, 1)
+					min = math.Min(min, sample)
+					max = math.Max(max, sample)
+					p.G = sample
 
-						min = math.Min(min, col)
-						max = math.Max(max, col)
-
-						switch c {
-						case 0:
-							p.R = col
-						case 1:
-							p.G = col
-						case 2:
-							p.B = col
-						}
-					}
+					sample = t.sampling(b, lum, 2)
+					min = math.Min(min, sample)
+					max = math.Max(max, sample)
+					p.B = sample
 
 					tmp.SetRGB(x, y, p)
 				}
@@ -195,15 +183,31 @@ func (t *Reinhard05) tonemap(tmp *hdr.RGB) (minCol, maxCol float64) {
 		select {
 		case <-completed:
 			return
-		case col := <-minCh:
-			minCol = math.Min(minCol, col)
-		case col := <-maxCh:
-			maxCol = math.Max(maxCol, col)
+		case sample := <-minCh:
+			minSample = math.Min(minSample, sample)
+		case sample := <-maxCh:
+			maxSample = math.Max(maxSample, sample)
 		}
 	}
 }
 
-func (t *Reinhard05) normalize(img *image.RGBA64, tmp *hdr.RGB, minCol, maxCol float64) {
+// sampling one channel
+func (t *Reinhard05) sampling(sample, lum float64, c int) float64 {
+	if sample != 0.0 {
+		// Local light adaptation
+		il := t.Chromatic*sample + (1-t.Chromatic)*lum
+		// Global light adaptation
+		ig := t.Chromatic*t.cav[c] + (1-t.Chromatic)*t.lav
+		// Interpolated light adaptation
+		ia := t.Light*il + (1-t.Light)*ig
+		// Photoreceptor equation
+		sample /= sample + math.Pow(t.f*ia, t.m)
+	}
+
+	return sample
+}
+
+func (t *Reinhard05) normalize(img *image.RGBA64, tmp *hdr.RGB, minSample, maxSample float64) {
 	completed := parallelR(t.HDRImage.Bounds(), func(x1, y1, x2, y2 int) {
 		for y := y1; y < y2; y++ {
 			for x := x1; x < x2; x++ {
@@ -211,9 +215,9 @@ func (t *Reinhard05) normalize(img *image.RGBA64, tmp *hdr.RGB, minCol, maxCol f
 				r, g, b, _ := pixel.HDRRGBA()
 
 				img.SetRGBA64(x, y, color.RGBA64{
-					R: t.nrmz(r, minCol, maxCol),
-					G: t.nrmz(g, minCol, maxCol),
-					B: t.nrmz(b, minCol, maxCol),
+					R: t.nrmz(r, minSample, maxSample),
+					G: t.nrmz(g, minSample, maxSample),
+					B: t.nrmz(b, minSample, maxSample),
 					A: RangeMax,
 				})
 			}
@@ -224,9 +228,9 @@ func (t *Reinhard05) normalize(img *image.RGBA64, tmp *hdr.RGB, minCol, maxCol f
 }
 
 // normalize one channel
-func (t *Reinhard05) nrmz(channel, minCol, maxCol float64) uint16 {
+func (t *Reinhard05) nrmz(channel, minSample, maxSample float64) uint16 {
 	// Normalize intensities
-	channel = (channel - minCol) / (maxCol - minCol)
+	channel = (channel - minSample) / (maxSample - minSample)
 
 	// Gamma correction
 	if channel > RangeMin {
