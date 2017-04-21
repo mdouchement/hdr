@@ -35,19 +35,19 @@ func (t *Linear) minmax() (rmm, gmm, bmm *minmax) {
 	mmCh := make(chan []*minmax)
 
 	completed := parallelR(t.HDRImage.Bounds(), func(x1, y1, x2, y2 int) {
-		rmm, gmm, bmm := newMinMax(), newMinMax(), newMinMax()
+		rrmm, ggmm, bbmm := newMinMax(), newMinMax(), newMinMax()
 
 		for y := y1; y < y2; y++ {
 			for x := x1; x < x2; x++ {
 				pixel := t.HDRImage.HDRAt(x, y)
 				r, g, b, _ := pixel.HDRRGBA()
 
-				rmm.update(r)
-				gmm.update(g)
-				bmm.update(b)
+				rrmm.update(r)
+				ggmm.update(g)
+				bbmm.update(b)
 			}
 		}
-		mmCh <- []*minmax{rmm, gmm, bmm}
+		mmCh <- []*minmax{rrmm, ggmm, bbmm}
 
 	})
 

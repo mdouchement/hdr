@@ -65,7 +65,14 @@ func (t *Reinhard05) Perform() image.Image {
 
 	t.lumOnce.Do(t.luminance) // First pass
 
+	// FIXME
+	// Extra memory consumption (x2)
+	// A temporary image avoids original image modifications and let user applies another TMO on the image.
+	//   - It is quite speed to re-read the original file from filesystem.
+	// We can avoid this tmp image by re-calculates the sampling but it costs an extra CPU consumption.
+	// We can reduce memory consuption by streaming the data to a swap file but iowait could happen.
 	tmp := hdr.NewRGB(t.HDRImage.Bounds())
+
 	minSample, maxSample := t.tonemap(tmp) // Second pass
 
 	t.normalize(img, tmp, minSample, maxSample) // Third pass
