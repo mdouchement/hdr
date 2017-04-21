@@ -53,9 +53,9 @@ func newDecoder(r io.Reader) (*decoder, error) {
 	return d, d.parseHeader()
 }
 
-//--------------------------------------//
-// Header parser                        //
-//--------------------------------------//
+//------------------------//
+// Header parser          //
+//------------------------//
 
 func (d *decoder) parseHeader() error {
 	magic := false
@@ -116,9 +116,9 @@ func (d *decoder) parseHeader() error {
 	return nil
 }
 
-//--------------------------------------//
-// Pixels parser                        //
-//--------------------------------------//
+//------------------------//
+// Pixels parser          //
+//------------------------//
 
 func (d *decoder) decode(dst image.Image, y int, scanline []byte) {
 	for x := 0; x < d.config.Width; x++ {
@@ -206,9 +206,9 @@ func (d *decoder) readRLE(scanline []byte) (err error) {
 	return
 }
 
-//--------------------------------------//
-// Reader                               //
-//--------------------------------------//
+//------------------------//
+// Reader                 //
+//------------------------//
 
 // DecodeConfig returns the color model and dimensions of a RGBE image without
 // decoding the entire image.
