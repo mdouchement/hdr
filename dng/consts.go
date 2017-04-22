@@ -1,10 +1,3 @@
-// Copyright 2011 The Go Authors. All rights reserved.
-// Use of this source code is governed by a BSD-style
-// license that can be found in the LICENSE file.
-
-// Imported from golang.org/x/image/tiff
-// Updated with DNG spec
-
 package dng
 
 // A tiff image file contains one or more images. The metadata
@@ -70,6 +63,10 @@ const (
 	tColorMap     = 320
 	tExtraSamples = 338
 	tSampleFormat = 339
+
+	// DNG
+	tDNGVersion         = 50706
+	tDNGBackwardVersion = 50707
 )
 
 // Compression types (defined in various places in the spec and supplements).
@@ -97,6 +94,9 @@ const (
 	pCMYK        = 5
 	pYCbCr       = 6
 	pCIELab      = 8
+
+	pLogL            = 32844
+	pTrueColorLogLuv = 32845
 )
 
 // Values for the tPredictor tag (page 64-65 of the spec).

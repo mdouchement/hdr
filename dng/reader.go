@@ -1,19 +1,3 @@
-// Copyright 2013 The Go Authors. All rights reserved.
-// Use of this source code is governed by a BSD-style
-// license that can be found in the LICENSE file.
-
-// Package dng implements rudimentary support for reading Digital Negative
-// (DNG) files.
-//
-// DNG is a bastardized TIFF file.
-// This package is a stripped back version of golang.org/x/image/tiff.
-//
-// Known limitations:
-//
-// Because TIFF files and DNG files share the same first few bytes, the image
-// package's file type detection will fail to recognize a dng if the tiff
-// reader is also imported.
-
 // Resources:
 // http://wwwimages.adobe.com/content/dam/Adobe/en/products/photoshop/pdfs/dng_spec_1.4.0.0.pdf
 // https://github.com/golang/image/tree/master/tiff
@@ -34,6 +18,8 @@ import (
 	"image"
 	"image/color"
 	"io"
+
+	"github.com/mdouchement/hdr/hdrcolor"
 )
 
 type decoder struct {
@@ -104,7 +90,9 @@ func (d *decoder) parseIFD(p []byte) error {
 		tTileOffsets,
 		tTileByteCounts,
 		tImageLength,
-		tImageWidth:
+		tImageWidth,
+		tDNGVersion,
+		tDNGBackwardVersion:
 		val, err := d.ifdUint(p)
 		if err != nil {
 			return err
@@ -138,11 +126,18 @@ func (d *decoder) parseIFD(p []byte) error {
 		if err != nil {
 			return err
 		}
+		fmt.Println("SampleFormat:", val) // tSampleFormat == 3 only when bpp == 32
 		for _, v := range val {
 			if v != 1 {
 				return UnsupportedError("sample format")
 			}
 		}
+	default:
+		// val, err := d.ifdUint(p)
+		// if err == nil {
+		// 	fmt.Println(tag, "-", val)
+		// }
+		fmt.Println(tag, "-", p)
 	}
 	return nil
 }
@@ -243,15 +238,26 @@ func newDecoder(r io.Reader) (*decoder, error) {
 		return nil, FormatError("BitsPerSample tag missing")
 	}
 	d.bpp = d.firstVal(tBitsPerSample)
+	fmt.Println("BPP:", d.bpp)
 
 	// Determine the image mode.
 	switch d.firstVal(tPhotometricInterpretation) {
+	case pWhiteIsZero:
+		fallthrough
+	case pBlackIsZero:
+		fallthrough
+	case pRGB:
+		fallthrough
 	case pPaletted:
-		d.mode = mPaletted
-		d.config.ColorModel = color.Palette(d.palette)
-	default:
+		fallthrough
+	case pTransMask:
 		// All LDR modes are droped.
 		return nil, UnsupportedError("color model, use Golang's lib for LDR images")
+	case pCMYK:
+		d.mode = m
+		d.config.ColorModel = hdrcolor.RGB
+	default:
+		return nil, UnsupportedError("color model")
 	}
 
 	return d, nil
