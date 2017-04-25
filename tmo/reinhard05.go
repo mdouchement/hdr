@@ -35,7 +35,6 @@ type Reinhard05 struct {
 	k          float64
 	m          float64
 	f          float64
-	gama       float64
 }
 
 // NewDefaultReinhard05 instanciates a new Reinhard05 TMO with default parameters.
