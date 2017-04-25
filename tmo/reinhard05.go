@@ -40,7 +40,7 @@ type Reinhard05 struct {
 
 // NewDefaultReinhard05 instanciates a new Reinhard05 TMO with default parameters.
 func NewDefaultReinhard05(m hdr.Image) *Reinhard05 {
-	return NewReinhard05(m, 0, 0, 1)
+	return NewReinhard05(m, -5, 0.89, 0.89)
 }
 
 // NewReinhard05 instanciates a new Reinhard05 TMO.
@@ -215,10 +215,10 @@ func (t *Reinhard05) sampling(sample, lum float64, c int) float64 {
 }
 
 func (t *Reinhard05) normalize(img *image.RGBA64, tmp *hdr.RGB, minSample, maxSample float64) {
-	completed := parallelR(t.HDRImage.Bounds(), func(x1, y1, x2, y2 int) {
+	completed := parallelR(tmp.Bounds(), func(x1, y1, x2, y2 int) {
 		for y := y1; y < y2; y++ {
 			for x := x1; x < x2; x++ {
-				pixel := t.HDRImage.HDRAt(x, y)
+				pixel := tmp.HDRAt(x, y)
 				r, g, b, _ := pixel.HDRRGBA()
 
 				img.SetRGBA64(x, y, color.RGBA64{

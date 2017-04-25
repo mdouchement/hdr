@@ -24,6 +24,7 @@ Read this [documentation](https://hal.archives-ouvertes.fr/hal-00724931/document
 - Normalization (a part of iCAM06 TMO)
 - Drago '03    - Adaptive logarithmic mapping for displaying high contrast scenes
 - Reinhard '05 - Photographic tone reproduction for digital images
+  - Playing could provide better rendering
 
 ## Usage
 
