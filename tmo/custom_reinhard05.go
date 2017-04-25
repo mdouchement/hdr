@@ -7,6 +7,7 @@ import (
 
 	colorful "github.com/lucasb-eyer/go-colorful"
 	"github.com/mdouchement/hdr"
+	"github.com/mdouchement/hdr/filter"
 )
 
 // A CustomReinhard05 is a custom Reinhard05 TMO implementation.
@@ -22,19 +23,19 @@ type CustomReinhard05 struct {
 
 // NewDefaultCustomReinhard05 instanciates a new CustomReinhard05 TMO with default parameters.
 func NewDefaultCustomReinhard05(m hdr.Image) *CustomReinhard05 {
-	return NewCustomReinhard05(m, 0, 0, 1)
+	return NewCustomReinhard05(m, 0, 0, 0.1)
 }
 
 // NewCustomReinhard05 instanciates a new CustomReinhard05 TMO.
 func NewCustomReinhard05(m hdr.Image, brightness, chromatic, light float64) *CustomReinhard05 {
 	return &CustomReinhard05{
 		HDRImage: m,
-		// Brightness is included in [-20, 20] with 0.1 increment step.
-		Brightness: brightness,
+		// Brightness is included in [-50, 50] with 1 increment step.
+		Brightness: brightness * 10,
 		// Chromatic is included in [0, 1] with 0.01 increment step.
 		Chromatic: chromatic,
 		// Light is included in [0, 1] with 0.01 increment step.
-		Light: light,
+		Light: light * 10,
 	}
 }
 
@@ -53,18 +54,20 @@ func (t *CustomReinhard05) Perform() image.Image {
 }
 
 func (t *CustomReinhard05) tonemap() (minSample, maxSample float64) {
-	minSample = 1.0
-	maxSample = 0.0
+	qsImg := filter.NewQuickSampling(t.HDRImage, 0.6)
+
+	minSample = math.Inf(1)
+	maxSample = math.Inf(-1)
 	minCh := make(chan float64)
 	maxCh := make(chan float64)
 
-	completed := parallelR(t.HDRImage.Bounds(), func(x1, y1, x2, y2 int) {
+	completed := parallelR(qsImg.Bounds(), func(x1, y1, x2, y2 int) {
 		min := 1.0
 		max := 0.0
 
 		for y := y1; y < y2; y++ {
 			for x := x1; x < x2; x++ {
-				pixel := t.HDRImage.HDRAt(x, y)
+				pixel := qsImg.HDRAt(x, y)
 				r, g, b, _ := pixel.HDRRGBA()
 
 				_, lum, _ := colorful.Color{R: r, G: g, B: b}.Xyz() // Get luminance (Y) from the CIE XYZ-space.
@@ -111,7 +114,7 @@ func (t *CustomReinhard05) sampling(sample, lum float64) float64 {
 		// Interpolated light adaptation
 		ia := t.Light * il
 		// Photoreceptor equation
-		sample /= sample + math.Pow(t.f*ia, 0)
+		sample /= sample + math.Pow(t.f*ia, ia)
 	}
 
 	return sample
