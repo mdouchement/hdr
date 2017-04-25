@@ -25,6 +25,8 @@ Read this [documentation](https://hal.archives-ouvertes.fr/hal-00724931/document
 - Drago '03    - Adaptive logarithmic mapping for displaying high contrast scenes
 - Reinhard '05 - Photographic tone reproduction for digital images
   - Playing could provide better rendering
+- Custom Reinhard '05
+	- Rendering looks like a JPEG photo taken with a smartphone
 
 ## Usage
 
@@ -81,8 +83,9 @@ func main() {
 
 		// t := tmo.NewLinear(hdrm)
 		// t := tmo.NewLogarithmic(hdrm)
-		//t := tmo.NewICam06Normalization(hdrm)
-		//t := tmo.NewDefaultDrago03(hdrm)
+		// t := tmo.NewICam06Normalization(hdrm)
+		// t := tmo.NewDefaultDrago03(hdrm)
+		// t := tmo.NewDefaultCustomReinhard05(hdrm)
 		t := tmo.NewDefaultReinhard05(hdrm)
 		m = t.Perform()
 
