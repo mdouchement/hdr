@@ -6,6 +6,7 @@ package rgbe
 // http://radsite.lbl.gov/radiance/framed.html (samples)
 
 import (
+	"bufio"
 	"fmt"
 	"image"
 	"io"
@@ -46,7 +47,7 @@ type decoder struct {
 
 func newDecoder(r io.Reader) (*decoder, error) {
 	d := &decoder{
-		r:        r,
+		r:        bufio.NewReader(r),
 		exposure: 1.0,
 	}
 

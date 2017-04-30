@@ -9,6 +9,10 @@ HDR is a library that handles RAW image format written with Golang.
 It aims to provide tools to read [HDR](https://en.wikipedia.org/wiki/High-dynamic-range_imaging) files and convert it to a LDR (Low Dynamic Range, aka PNG/JPEG/etc.) in an `image.Image` object.
 
 
+Documentations:
+ - http://www.anyhere.com/gward/hdrenc/hdr_encodings.html
+
+
 ## Supported file formats
 
 - Radiance RGBE (read-only)
