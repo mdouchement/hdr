@@ -8,7 +8,7 @@ import (
 
 	colorful "github.com/lucasb-eyer/go-colorful"
 	"github.com/mdouchement/hdr"
-	"github.com/mdouchement/hdr/hdrcolor"
+	"github.com/mdouchement/hdr/filter"
 )
 
 const (
@@ -64,30 +64,23 @@ func (t *Reinhard05) Perform() image.Image {
 
 	t.lumOnce.Do(t.luminance) // First pass
 
-	// FIXME
-	// Extra memory consumption (x2)
-	// A temporary image avoids original image modifications and let user applies another TMO on the image.
-	//   - It is quite speed to re-read the original file from filesystem.
-	// We can avoid this tmp image by re-calculates the sampling but it costs an extra CPU consumption.
-	// We can reduce memory consuption by streaming the data to a swap file but iowait could happen.
-	tmp := hdr.NewRGB(t.HDRImage.Bounds())
+	minSample, maxSample := t.tonemap() // Second pass
 
-	minSample, maxSample := t.tonemap(tmp) // Second pass
-
-	t.normalize(img, tmp, minSample, maxSample) // Third pass
+	t.normalize(img, minSample, maxSample) // Third pass
 
 	return img
 }
 
 func (t *Reinhard05) luminance() {
 	reinhardCh := make(chan *Reinhard05)
+	qsImg := filter.NewQuickSampling(t.HDRImage, 0.6)
 
-	completed := parallelR(t.HDRImage.Bounds(), func(x1, y1, x2, y2 int) {
+	completed := parallelR(qsImg.Bounds(), func(x1, y1, x2, y2 int) {
 		tt := NewDefaultReinhard05(nil)
 
 		for y := y1; y < y2; y++ {
 			for x := x1; x < x2; x++ {
-				pixel := t.HDRImage.HDRAt(x, y)
+				pixel := qsImg.HDRAt(x, y)
 				r, g, b, _ := pixel.HDRRGBA()
 
 				_, lum, _ := colorful.Color{R: r, G: g, B: b}.Xyz() // Get luminance (Y) from the CIE XYZ-space.
@@ -122,7 +115,7 @@ func (t *Reinhard05) luminance() {
 	}
 NEXT:
 
-	size := float64(t.HDRImage.Size())
+	size := float64(qsImg.Size())
 	t.worldLum /= size
 	t.cav[0] /= size
 	t.cav[1] /= size
@@ -140,43 +133,39 @@ NEXT:
 	t.f = math.Exp(-t.Brightness)
 }
 
-func (t *Reinhard05) tonemap(tmp *hdr.RGB) (minSample, maxSample float64) {
+func (t *Reinhard05) tonemap() (minSample, maxSample float64) {
 	minSample = 1.0
 	maxSample = 0.0
 	minCh := make(chan float64)
 	maxCh := make(chan float64)
 
-	completed := parallelR(t.HDRImage.Bounds(), func(x1, y1, x2, y2 int) {
+	qsImg := filter.NewQuickSampling(t.HDRImage, 0.6)
+
+	completed := parallelR(qsImg.Bounds(), func(x1, y1, x2, y2 int) {
 		min := 1.0
 		max := 0.0
 
 		for y := y1; y < y2; y++ {
 			for x := x1; x < x2; x++ {
-				pixel := t.HDRImage.HDRAt(x, y)
+				pixel := qsImg.HDRAt(x, y)
 				r, g, b, _ := pixel.HDRRGBA()
 
 				_, lum, _ := colorful.Color{R: r, G: g, B: b}.Xyz() // Get luminance (Y) from the CIE XYZ-space.
 
 				var sample float64
-				p := hdrcolor.RGB{}
 
 				if lum != 0.0 {
 					sample = t.sampling(r, lum, 0)
 					min = math.Min(min, sample)
 					max = math.Max(max, sample)
-					p.R = sample
 
 					sample = t.sampling(g, lum, 1)
 					min = math.Min(min, sample)
 					max = math.Max(max, sample)
-					p.G = sample
 
 					sample = t.sampling(b, lum, 2)
 					min = math.Min(min, sample)
 					max = math.Max(max, sample)
-					p.B = sample
-
-					tmp.SetRGB(x, y, p)
 				}
 			}
 		}
@@ -213,17 +202,19 @@ func (t *Reinhard05) sampling(sample, lum float64, c int) float64 {
 	return sample
 }
 
-func (t *Reinhard05) normalize(img *image.RGBA64, tmp *hdr.RGB, minSample, maxSample float64) {
-	completed := parallelR(tmp.Bounds(), func(x1, y1, x2, y2 int) {
+func (t *Reinhard05) normalize(img *image.RGBA64, minSample, maxSample float64) {
+	completed := parallelR(t.HDRImage.Bounds(), func(x1, y1, x2, y2 int) {
 		for y := y1; y < y2; y++ {
 			for x := x1; x < x2; x++ {
-				pixel := tmp.HDRAt(x, y)
+				pixel := t.HDRImage.HDRAt(x, y)
 				r, g, b, _ := pixel.HDRRGBA()
 
+				_, lum, _ := colorful.Color{R: r, G: g, B: b}.Xyz() // Get luminance (Y) from the CIE XYZ-space.
+
 				img.SetRGBA64(x, y, color.RGBA64{
-					R: t.nrmz(r, minSample, maxSample),
-					G: t.nrmz(g, minSample, maxSample),
-					B: t.nrmz(b, minSample, maxSample),
+					R: t.nrmz(t.sampling(r, lum, 0), minSample, maxSample),
+					G: t.nrmz(t.sampling(g, lum, 1), minSample, maxSample),
+					B: t.nrmz(t.sampling(b, lum, 2), minSample, maxSample),
 					A: RangeMax,
 				})
 			}
