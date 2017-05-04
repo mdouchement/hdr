@@ -20,7 +20,7 @@ import (
 type FormatError string
 
 func (e FormatError) Error() string {
-	return fmt.Sprintf("rgbe: invalid format: %s", e)
+	return "rgbe: invalid format: " + string(e)
 }
 
 // An UnsupportedError reports that the input uses a valid but
@@ -28,14 +28,14 @@ func (e FormatError) Error() string {
 type UnsupportedError string
 
 func (e UnsupportedError) Error() string {
-	return fmt.Sprintf("rgbe: unsupported feature: %s", e)
+	return "rgbe: unsupported feature: " + string(e)
 }
 
 // An InternalError reports that an internal error was encountered.
 type InternalError string
 
 func (e InternalError) Error() string {
-	return fmt.Sprintf("rgbe: internal error: %s", e)
+	return "rgbe: internal error: " + string(e)
 }
 
 type decoder struct {
@@ -87,7 +87,10 @@ func (d *decoder) parseHeader() error {
 			continue
 		}
 		if token == "FORMAT=32-bit_rle_xyze" {
-			return UnsupportedError("32-bit_rle_xyze format")
+			// Header found
+			d.mode = mXYZE
+			d.config.ColorModel = hdrcolor.XYZModel
+			continue
 		}
 		if strings.HasPrefix(token, "EXPOSURE=") {
 			if n, err := fmt.Sscanf(token, "EXPOSURE=%f", &d.exposure); n < 1 || err != nil {
@@ -123,7 +126,7 @@ func (d *decoder) parseHeader() error {
 
 func (d *decoder) decode(dst image.Image, y int, scanline []byte) {
 	for x := 0; x < d.config.Width; x++ {
-		r, g, b := rgbeToRGB(
+		b0, b1, b2 := bytesToFloats(
 			scanline[4*x],
 			scanline[4*x+1],
 			scanline[4*x+2],
@@ -133,14 +136,17 @@ func (d *decoder) decode(dst image.Image, y int, scanline []byte) {
 		switch d.mode {
 		case mRGBE:
 			img := dst.(*hdr.RGB)
-			img.SetRGB(x, y, hdrcolor.RGB{R: r, G: g, B: b})
+			img.SetRGB(x, y, hdrcolor.RGB{R: b0, G: b1, B: b2})
+		case mXYZE:
+			img := dst.(*hdr.XYZ)
+			img.SetXYZ(x, y, hdrcolor.XYZ{X: b0, Y: b1, Z: b2})
 		}
 	}
 }
 
 func (d *decoder) decodeRLE(dst image.Image, y int, scanline []byte) {
 	for x := 0; x < d.config.Width; x++ {
-		r, g, b := rgbeToRGB(
+		b0, b1, b2 := bytesToFloats(
 			scanline[x],
 			scanline[x+d.config.Width],
 			scanline[x+d.config.Width*2],
@@ -150,7 +156,10 @@ func (d *decoder) decodeRLE(dst image.Image, y int, scanline []byte) {
 		switch d.mode {
 		case mRGBE:
 			img := dst.(*hdr.RGB)
-			img.SetRGB(x, y, hdrcolor.RGB{R: r, G: g, B: b})
+			img.SetRGB(x, y, hdrcolor.RGB{R: b0, G: b1, B: b2})
+		case mXYZE:
+			img := dst.(*hdr.XYZ)
+			img.SetXYZ(x, y, hdrcolor.XYZ{X: b0, Y: b1, Z: b2})
 		}
 	}
 }
@@ -232,6 +241,8 @@ func Decode(r io.Reader) (img image.Image, err error) {
 	switch d.mode {
 	case mRGBE:
 		img = hdr.NewRGB(imgRect)
+	case mXYZE:
+		img = hdr.NewXYZ(imgRect)
 	default:
 		err = UnsupportedError("image mode")
 		return
