@@ -16,28 +16,6 @@ import (
 	"github.com/mdouchement/hdr/hdrcolor"
 )
 
-// A FormatError reports that the input is not a valid RGBE image.
-type FormatError string
-
-func (e FormatError) Error() string {
-	return "rgbe: invalid format: " + string(e)
-}
-
-// An UnsupportedError reports that the input uses a valid but
-// unimplemented feature.
-type UnsupportedError string
-
-func (e UnsupportedError) Error() string {
-	return "rgbe: unsupported feature: " + string(e)
-}
-
-// An InternalError reports that an internal error was encountered.
-type InternalError string
-
-func (e InternalError) Error() string {
-	return "rgbe: internal error: " + string(e)
-}
-
 type decoder struct {
 	r        io.Reader
 	config   image.Config

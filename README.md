@@ -15,7 +15,7 @@ Documentations:
 
 ## Supported file formats
 
-- Radiance RGBE (read-only)
+- Radiance RGBE/XYZE
 
 ## Supported tone mapping operators
 

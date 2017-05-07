@@ -46,7 +46,7 @@ func (t *ICam06Normalization) luminance() {
 				pixel := t.HDRImage.HDRAt(x, y)
 				r, g, b, _ := pixel.HDRRGBA()
 
-				_, lum, _ := colorful.Color{R: r, G: g, B: b}.Xyz() // Get luminance (Y) from the CIE XYZ-space.
+				_, lum, _ := colorful.LinearRgbToXyz(r, g, b) // Get luminance (Y) from the CIE XYZ-space.
 
 				max = math.Max(max, lum)
 			}

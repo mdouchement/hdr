@@ -70,7 +70,7 @@ func (t *CustomReinhard05) tonemap() (minSample, maxSample float64) {
 				pixel := qsImg.HDRAt(x, y)
 				r, g, b, _ := pixel.HDRRGBA()
 
-				_, lum, _ := colorful.Color{R: r, G: g, B: b}.Xyz() // Get luminance (Y) from the CIE XYZ-space.
+				_, lum, _ := colorful.LinearRgbToXyz(r, g, b) // Get luminance (Y) from the CIE XYZ-space.
 
 				var sample float64
 

@@ -65,8 +65,8 @@ func (c XYZ) RGBA() (r, g, b, a uint32) {
 // HDRRGBA returns the red, green, blue and alpha values
 // for the HDR color.
 func (c XYZ) HDRRGBA() (r, g, b, a float64) {
-	rgb := colorful.Xyz(c.X, c.Y, c.Z)
-	r, g, b = rgb.R, rgb.G, rgb.B
+	r, g, b = colorful.XyzToLinearRgb(c.X, c.Y, c.Z)
+
 	a = 0xFFFF
 
 	return
@@ -104,12 +104,12 @@ func xyzModel(c color.Color) color.Color {
 	if hdrc, ok := c.(Color); ok {
 		// HDR color
 		r, g, b, _ := hdrc.HDRRGBA()
-		x, y, z := colorful.Color{R: r, G: g, B: b}.Xyz()
+		x, y, z := colorful.LinearRgbToXyz(r, g, b)
 		return XYZ{X: x, Y: y, Z: z}
 	}
 
 	// LDR color
 	r, g, b, _ := c.RGBA()
-	x, y, z := colorful.Color{R: float64(r), G: float64(g), B: float64(b)}.Xyz()
+	x, y, z := colorful.LinearRgbToXyz(float64(r), float64(g), float64(b))
 	return XYZ{X: x, Y: y, Z: z}
 }
