@@ -6,7 +6,6 @@ import (
 	"math"
 	"sync"
 
-	colorful "github.com/lucasb-eyer/go-colorful"
 	"github.com/mdouchement/hdr"
 	"github.com/mdouchement/hdr/filter"
 )
@@ -81,13 +80,13 @@ func (t *Reinhard05) luminance() {
 		for y := y1; y < y2; y++ {
 			for x := x1; x < x2; x++ {
 				pixel := qsImg.HDRAt(x, y)
-				r, g, b, _ := pixel.HDRRGBA()
 
-				_, lum, _ := colorful.LinearRgbToXyz(r, g, b) // Get luminance (Y) from the CIE XYZ-space.
+				_, lum, _, _ := pixel.HDRXYZA()
 				tt.minLum = math.Min(tt.minLum, lum)
 				tt.maxLum = math.Max(tt.maxLum, lum)
 				tt.worldLum += math.Log((2.3e-5) + lum)
 
+				r, g, b, _ := pixel.HDRRGBA()
 				tt.cav[0] += r
 				tt.cav[1] += g
 				tt.cav[2] += b
@@ -149,8 +148,7 @@ func (t *Reinhard05) tonemap() (minSample, maxSample float64) {
 			for x := x1; x < x2; x++ {
 				pixel := qsImg.HDRAt(x, y)
 				r, g, b, _ := pixel.HDRRGBA()
-
-				_, lum, _ := colorful.LinearRgbToXyz(r, g, b) // Get luminance (Y) from the CIE XYZ-space.
+				_, lum, _, _ := pixel.HDRXYZA()
 
 				var sample float64
 
@@ -208,8 +206,7 @@ func (t *Reinhard05) normalize(img *image.RGBA64, minSample, maxSample float64) 
 			for x := x1; x < x2; x++ {
 				pixel := t.HDRImage.HDRAt(x, y)
 				r, g, b, _ := pixel.HDRRGBA()
-
-				_, lum, _ := colorful.LinearRgbToXyz(r, g, b) // Get luminance (Y) from the CIE XYZ-space.
+				_, lum, _, _ := pixel.HDRXYZA()
 
 				img.SetRGBA64(x, y, color.RGBA64{
 					R: t.nrmz(t.sampling(r, lum, 0), minSample, maxSample),

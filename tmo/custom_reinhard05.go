@@ -5,7 +5,6 @@ import (
 	"image/color"
 	"math"
 
-	colorful "github.com/lucasb-eyer/go-colorful"
 	"github.com/mdouchement/hdr"
 	"github.com/mdouchement/hdr/filter"
 )
@@ -69,8 +68,7 @@ func (t *CustomReinhard05) tonemap() (minSample, maxSample float64) {
 			for x := x1; x < x2; x++ {
 				pixel := qsImg.HDRAt(x, y)
 				r, g, b, _ := pixel.HDRRGBA()
-
-				_, lum, _ := colorful.LinearRgbToXyz(r, g, b) // Get luminance (Y) from the CIE XYZ-space.
+				_, lum, _, _ := pixel.HDRXYZA()
 
 				var sample float64
 

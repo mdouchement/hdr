@@ -61,9 +61,8 @@ func (t *Drago03) luminance() {
 		for y := y1; y < y2; y++ {
 			for x := x1; x < x2; x++ {
 				pixel := t.HDRImage.HDRAt(x, y)
-				r, g, b, _ := pixel.HDRRGBA()
+				_, lum, _, _ := pixel.HDRXYZA()
 
-				_, lum, _ := colorful.LinearRgbToXyz(r, g, b) // Get luminance (Y) from the CIE XYZ-space.
 				avg += math.Log(lum + 1e-4)
 				max = math.Max(t.maxLum, lum)
 			}
@@ -100,9 +99,7 @@ func (t *Drago03) tonemap(img *image.RGBA64) {
 		for y := y1; y < y2; y++ {
 			for x := x1; x < x2; x++ {
 				pixel := t.HDRImage.HDRAt(x, y)
-				r, g, b, _ := pixel.HDRRGBA()
-
-				xx, yy, zz := colorful.Color{R: r, G: g, B: b}.Xyz() // Convert to CIE XYZ-space, Y is the luminance value.
+				xx, yy, zz, _ := pixel.HDRXYZA()
 
 				// Core Drago Equation
 				lumAvgRatio = yy / t.avgLum
@@ -115,11 +112,11 @@ func (t *Drago03) tonemap(img *image.RGBA64) {
 				zz *= scale
 
 				// XYZ color-space to RGB conversion
-				rgb := colorful.Xyz(xx, yy, zz)
+				r, g, b := colorful.XyzToLinearRgb(xx, yy, zz)
 				img.SetRGBA64(x, y, color.RGBA64{
-					R: t.normalize(rgb.R),
-					G: t.normalize(rgb.G),
-					B: t.normalize(rgb.B),
+					R: t.normalize(r),
+					G: t.normalize(g),
+					B: t.normalize(b),
 					A: RangeMax,
 				})
 			}

@@ -14,6 +14,10 @@ type Color interface {
 	// HDRRGBA returns the red, green, blue and alpha values
 	// for the HDR color.
 	HDRRGBA() (r, g, b, a float64)
+
+	// HDRXYZA returns the x, y, z and alpha values
+	// for the HDR color.
+	HDRXYZA() (x, y, z, a float64)
 }
 
 // RGB represents a HDR color in RGB color-space.
@@ -43,6 +47,15 @@ func (c RGB) HDRRGBA() (r, g, b, a float64) {
 	return
 }
 
+// HDRXYZA returns the x, y, z and alpha values
+// for the HDR color.
+func (c RGB) HDRXYZA() (x, y, z, a float64) {
+	x, y, z = colorful.LinearRgbToXyz(c.R, c.G, c.B)
+	a = 0xFFFF
+
+	return
+}
+
 // XYZ represents a HDR color in XYZ color-space.
 type XYZ struct {
 	X, Y, Z float64
@@ -67,6 +80,15 @@ func (c XYZ) RGBA() (r, g, b, a uint32) {
 func (c XYZ) HDRRGBA() (r, g, b, a float64) {
 	r, g, b = colorful.XyzToLinearRgb(c.X, c.Y, c.Z)
 
+	a = 0xFFFF
+
+	return
+}
+
+// HDRXYZA returns the x, y, z and alpha values
+// for the HDR color.
+func (c XYZ) HDRXYZA() (x, y, z, a float64) {
+	x, y, z = c.X, c.Y, c.Z
 	a = 0xFFFF
 
 	return

@@ -44,9 +44,7 @@ func (t *ICam06Normalization) luminance() {
 		for y := y1; y < y2; y++ {
 			for x := x1; x < x2; x++ {
 				pixel := t.HDRImage.HDRAt(x, y)
-				r, g, b, _ := pixel.HDRRGBA()
-
-				_, lum, _ := colorful.LinearRgbToXyz(r, g, b) // Get luminance (Y) from the CIE XYZ-space.
+				_, lum, _, _ := pixel.HDRXYZA()
 
 				max = math.Max(max, lum)
 			}
@@ -73,10 +71,7 @@ func (t *ICam06Normalization) tonemap(img *image.RGBA64) {
 		for y := y1; y < y2; y++ {
 			for x := x1; x < x2; x++ {
 				pixel := t.HDRImage.HDRAt(x, y)
-				r, g, b, _ := pixel.HDRRGBA()
-
-				// CIE XYZ-space conversion
-				xx, yy, zz := colorful.Color{R: r, G: g, B: b}.Xyz()
+				xx, yy, zz, _ := pixel.HDRXYZA()
 
 				// XYZ normalization
 				xx /= t.maxLum
@@ -84,13 +79,13 @@ func (t *ICam06Normalization) tonemap(img *image.RGBA64) {
 				zz /= t.maxLum
 
 				// RGB-space conversion
-				rgb := colorful.Xyz(xx, yy, zz)
+				r, g, b := colorful.XyzToLinearRgb(xx, yy, zz)
 
 				// Clipping, first part
 				i := x * y
-				perc[i] = rgb.R
-				perc[size+i] = rgb.G
-				perc[size*2+i] = rgb.B
+				perc[i] = r
+				perc[size+i] = g
+				perc[size*2+i] = b
 			}
 		}
 	})
