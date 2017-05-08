@@ -236,7 +236,6 @@ func Decode(r io.Reader) (img image.Image, err error) {
 			return
 		}
 
-		// fmt.Printf("%b != 2 || %b != 2 || %d != %d - %b != 0\n", pixel[0], pixel[1], int(pixel[2])<<8|int(pixel[3]), d.config.Width, pixel[2]&0x80)
 		if pixel[0] != 2 || pixel[1] != 2 || int(pixel[2])<<8|int(pixel[3]) != d.config.Width {
 			// --- simple scanline (not rle)
 
