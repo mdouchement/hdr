@@ -125,33 +125,14 @@ func (e *encoder) writeRLE(w *bufio.Writer, scanline []byte) error {
 
 	// One run matches to n successive same byte
 	for l < eor {
-		offset := 0 // Start offset of the n successive same byte
-		index := 0  // Bytes iterator
-		n := 0      // The run length
+		index, offset, n := e.findRun(scanline, l)
 
-		for n <= 4 && index < 128 && l+index < eor {
-			offset = index
-			n = 0
-
-			// Count successive bytes
-			for n < 127 && offset+n < 128 && l+index < eor && scanline[l+offset] == scanline[l+index] {
-				index++
-				n++
-			}
-		}
-		// fmt.Printf("l: %d, o: %d, n: %d, p: %d\n", l, offset, n, peek)
-
-		// For an efficent RLE, we need more than 4 bytes.
+		// For an efficient RLE, we need more than 4 bytes.
 		// Under 5 bytes, it is more efficient to write the bytes.
 		if n > 4 {
-			// Write a short-run (all the read bytes before the found run)
 			if offset > 0 {
-				// Write short-run size
-				if err := w.WriteByte(byte(offset)); err != nil {
-					return err
-				}
-				// Write short-run
-				if _, err := w.Write(scanline[l : l+offset]); err != nil {
+				// Write a short-run (all the read bytes before the found run)
+				if err := e.writeNonRun(w, scanline[l:l+offset]); err != nil {
 					return err
 				}
 			}
@@ -163,13 +144,7 @@ func (e *encoder) writeRLE(w *bufio.Writer, scanline []byte) error {
 			}
 		} else {
 			// Write a non run with size of index (128 or the remain bytes of the end of scanline)
-			//
-			// Write non-run size
-			if err := w.WriteByte(byte(index)); err != nil {
-				return err
-			}
-			// Write non-run
-			if _, err := w.Write(scanline[l : l+index]); err != nil {
+			if err := e.writeNonRun(w, scanline[l:l+index]); err != nil {
 				return err
 			}
 		}
@@ -182,6 +157,37 @@ func (e *encoder) writeRLE(w *bufio.Writer, scanline []byte) error {
 	}
 
 	return nil
+}
+
+// findRun searches for RLE pattern (n successive same byte where n must be greater than 4).
+// index is the currrent scanline index.
+// offset is the position of the beginning of the run.
+// n is the run length.
+func (e *encoder) findRun(scanline []byte, l int) (index, offset, n int) {
+	eor := len(scanline)
+
+	for n <= 4 && index < 128 && l+index < eor {
+		offset = index
+		n = 0
+
+		// Count successive bytes
+		for n < 127 && offset+n < 128 && l+index < eor && scanline[l+offset] == scanline[l+index] {
+			index++
+			n++
+		}
+	}
+
+	return
+}
+
+func (e *encoder) writeNonRun(w *bufio.Writer, scanline []byte) error {
+	// Write non-run/short-run size
+	if err := w.WriteByte(byte(len(scanline))); err != nil {
+		return err
+	}
+	// Write non-run/short-run
+	_, err := w.Write(scanline)
+	return err
 }
 
 // Encode writes the Image m to w in RGBE format.

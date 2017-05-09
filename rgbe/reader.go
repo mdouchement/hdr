@@ -46,36 +46,24 @@ func (d *decoder) parseHeader() error {
 		}
 		token = strings.TrimSpace(token)
 
-		if token == "" {
+		switch token {
+		case "":
 			// End of header
-			break
-		}
-		if token == "#?RADIANCE" || token == "#?RGBE" || token == "#?AUTOPANO" {
+			goto NEXT
+		case "#?RADIANCE":
+			fallthrough
+		case "#?RGBE":
+			fallthrough
+		case "#?AUTOPANO":
 			// Format specifier found (magic number)
 			magic = true
 		}
-		if strings.HasPrefix(token, "#") {
-			// Skip commented line
-			continue
-		}
-		if token == "FORMAT=32-bit_rle_rgbe" {
-			// Header found
-			d.mode = mRGBE
-			d.config.ColorModel = hdrcolor.RGBModel
-			continue
-		}
-		if token == "FORMAT=32-bit_rle_xyze" {
-			// Header found
-			d.mode = mXYZE
-			d.config.ColorModel = hdrcolor.XYZModel
-			continue
-		}
-		if strings.HasPrefix(token, "EXPOSURE=") {
-			if n, err := fmt.Sscanf(token, "EXPOSURE=%f", &d.exposure); n < 1 || err != nil {
-				return FormatError("invalid exposure specifier")
-			}
+
+		if err := d.appendHeaderAttributes(token); err != nil {
+			return err
 		}
 	}
+NEXT:
 
 	// ignore weird exposure adjustments
 	if d.exposure > 1e12 || d.exposure < 1e-12 {
@@ -93,6 +81,32 @@ func (d *decoder) parseHeader() error {
 	}
 	if n, err := fmt.Sscanf(token, "-Y %d +X %d", &d.config.Height, &d.config.Width); n < 2 || err != nil {
 		return FormatError("missing image size specifier")
+	}
+
+	return nil
+}
+
+func (d *decoder) appendHeaderAttributes(token string) error {
+	if strings.HasPrefix(token, "#") {
+		// Skip commented line
+		return nil
+	}
+	if token == "FORMAT=32-bit_rle_rgbe" {
+		// Header found
+		d.mode = mRGBE
+		d.config.ColorModel = hdrcolor.RGBModel
+		return nil
+	}
+	if token == "FORMAT=32-bit_rle_xyze" {
+		// Header found
+		d.mode = mXYZE
+		d.config.ColorModel = hdrcolor.XYZModel
+		return nil
+	}
+	if strings.HasPrefix(token, "EXPOSURE=") {
+		if n, err := fmt.Sscanf(token, "EXPOSURE=%f", &d.exposure); n < 1 || err != nil {
+			return FormatError("invalid exposure specifier")
+		}
 	}
 
 	return nil
