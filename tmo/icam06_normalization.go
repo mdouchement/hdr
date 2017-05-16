@@ -9,6 +9,7 @@ import (
 
 	colorful "github.com/lucasb-eyer/go-colorful"
 	"github.com/mdouchement/hdr"
+	"github.com/mdouchement/hdr/util"
 )
 
 // A ICam06Normalization is a part of iCAM06 TMO implementation.
@@ -38,7 +39,7 @@ func (t *ICam06Normalization) Perform() image.Image {
 func (t *ICam06Normalization) luminance() {
 	maxCh := make(chan float64)
 
-	completed := parallelR(t.HDRImage.Bounds(), func(x1, y1, x2, y2 int) {
+	completed := util.ParallelR(t.HDRImage.Bounds(), func(x1, y1, x2, y2 int) {
 		max := math.Inf(-1)
 
 		for y := y1; y < y2; y++ {
@@ -67,7 +68,7 @@ func (t *ICam06Normalization) tonemap(img *image.RGBA64) {
 	size := t.HDRImage.Size()
 	perc := make(percentiles, size*3) // FIXME high memory consumption
 
-	completed := parallelR(t.HDRImage.Bounds(), func(x1, y1, x2, y2 int) {
+	completed := util.ParallelR(t.HDRImage.Bounds(), func(x1, y1, x2, y2 int) {
 		for y := y1; y < y2; y++ {
 			for x := x1; x < x2; x++ {
 				pixel := t.HDRImage.HDRAt(x, y)
@@ -96,7 +97,7 @@ func (t *ICam06Normalization) tonemap(img *image.RGBA64) {
 	minRGB := math.Min(perc.percentile(2), 0)
 	maxRGB := perc.percentile(98)
 
-	completed = parallelR(t.HDRImage.Bounds(), func(x1, y1, x2, y2 int) {
+	completed = util.ParallelR(t.HDRImage.Bounds(), func(x1, y1, x2, y2 int) {
 		for y := y1; y < y2; y++ {
 			for x := x1; x < x2; x++ {
 				pixel := t.HDRImage.HDRAt(x, y)

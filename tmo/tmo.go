@@ -4,10 +4,6 @@ import (
 	"fmt"
 	"image"
 	"math"
-	"runtime"
-	"sync"
-
-	"github.com/mdouchement/hdr"
 )
 
 const (
@@ -22,7 +18,6 @@ const (
 var (
 	// LumPixFloor is the default lunMap maping for LinearInversePixelMapping func.
 	LumPixFloor []float64
-	ncpu        = runtime.NumCPU()
 )
 
 func init() {
@@ -46,33 +41,6 @@ func init() {
 type ToneMappingOperator interface {
 	// Perform runs the TMO mapping.
 	Perform() (image.Image, error)
-}
-
-func parallelR(r image.Rectangle, f func(x1, y1, x2, y2 int)) chan struct{} {
-	return parallel(r.Dx(), r.Dy(), f)
-}
-
-func parallel(width, height int, f func(x1, y1, x2, y2 int)) chan struct{} {
-	// FIXME use context
-	wg := &sync.WaitGroup{}
-	completed := make(chan struct{})
-
-	for _, rect := range hdr.Split(0, 0, width, height, ncpu) {
-		wg.Add(1)
-		go func(rect image.Rectangle) {
-			defer wg.Done()
-
-			f(rect.Min.X, rect.Min.Y, rect.Max.X, rect.Max.Y)
-
-		}(rect)
-	}
-
-	go func() {
-		wg.Wait()
-		close(completed)
-	}()
-
-	return completed
 }
 
 // LinearInversePixelMapping is an linear inverse pixel mapping.

@@ -8,6 +8,7 @@ import (
 
 	colorful "github.com/lucasb-eyer/go-colorful"
 	"github.com/mdouchement/hdr"
+	"github.com/mdouchement/hdr/util"
 )
 
 // A Drago03 is an adaptive TMO implementation based on Frederic Drago's 2003 white paper.
@@ -54,7 +55,7 @@ func (t *Drago03) luminance() {
 	avgCh := make(chan float64)
 	maxCh := make(chan float64)
 
-	completed := parallelR(t.HDRImage.Bounds(), func(x1, y1, x2, y2 int) {
+	completed := util.ParallelR(t.HDRImage.Bounds(), func(x1, y1, x2, y2 int) {
 		var avg float64
 		var max float64
 
@@ -92,7 +93,7 @@ NEXT:
 }
 
 func (t *Drago03) tonemap(img *image.RGBA64) {
-	completed := parallelR(t.HDRImage.Bounds(), func(x1, y1, x2, y2 int) {
+	completed := util.ParallelR(t.HDRImage.Bounds(), func(x1, y1, x2, y2 int) {
 		var lumAvgRatio float64
 		var newLum float64
 

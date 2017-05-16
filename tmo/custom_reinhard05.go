@@ -7,6 +7,7 @@ import (
 
 	"github.com/mdouchement/hdr"
 	"github.com/mdouchement/hdr/filter"
+	"github.com/mdouchement/hdr/util"
 )
 
 // A CustomReinhard05 is a custom Reinhard05 TMO implementation.
@@ -60,7 +61,7 @@ func (t *CustomReinhard05) tonemap() (minSample, maxSample float64) {
 	minCh := make(chan float64)
 	maxCh := make(chan float64)
 
-	completed := parallelR(qsImg.Bounds(), func(x1, y1, x2, y2 int) {
+	completed := util.ParallelR(qsImg.Bounds(), func(x1, y1, x2, y2 int) {
 		min := 1.0
 		max := 0.0
 
@@ -119,7 +120,7 @@ func (t *CustomReinhard05) sampling(sample, lum float64) float64 {
 }
 
 func (t *CustomReinhard05) normalize(img *image.RGBA64, minSample, maxSample float64) {
-	completed := parallelR(t.HDRImage.Bounds(), func(x1, y1, x2, y2 int) {
+	completed := util.ParallelR(t.HDRImage.Bounds(), func(x1, y1, x2, y2 int) {
 		for y := y1; y < y2; y++ {
 			for x := x1; x < x2; x++ {
 				pixel := t.HDRImage.HDRAt(x, y)

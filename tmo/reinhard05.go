@@ -8,6 +8,7 @@ import (
 
 	"github.com/mdouchement/hdr"
 	"github.com/mdouchement/hdr/filter"
+	"github.com/mdouchement/hdr/util"
 )
 
 const (
@@ -74,7 +75,7 @@ func (t *Reinhard05) luminance() {
 	reinhardCh := make(chan *Reinhard05)
 	qsImg := filter.NewQuickSampling(t.HDRImage, 0.6)
 
-	completed := parallelR(qsImg.Bounds(), func(x1, y1, x2, y2 int) {
+	completed := util.ParallelR(qsImg.Bounds(), func(x1, y1, x2, y2 int) {
 		tt := NewDefaultReinhard05(nil)
 
 		for y := y1; y < y2; y++ {
@@ -140,7 +141,7 @@ func (t *Reinhard05) tonemap() (minSample, maxSample float64) {
 
 	qsImg := filter.NewQuickSampling(t.HDRImage, 0.6)
 
-	completed := parallelR(qsImg.Bounds(), func(x1, y1, x2, y2 int) {
+	completed := util.ParallelR(qsImg.Bounds(), func(x1, y1, x2, y2 int) {
 		min := 1.0
 		max := 0.0
 
@@ -201,7 +202,7 @@ func (t *Reinhard05) sampling(sample, lum float64, c int) float64 {
 }
 
 func (t *Reinhard05) normalize(img *image.RGBA64, minSample, maxSample float64) {
-	completed := parallelR(t.HDRImage.Bounds(), func(x1, y1, x2, y2 int) {
+	completed := util.ParallelR(t.HDRImage.Bounds(), func(x1, y1, x2, y2 int) {
 		for y := y1; y < y2; y++ {
 			for x := x1; x < x2; x++ {
 				pixel := t.HDRImage.HDRAt(x, y)
