@@ -30,9 +30,9 @@ type RGB struct {
 // by a uint32 so that multiplying by a blend factor up to 0xffff will not
 // overflow.
 func (c RGB) RGBA() (r, g, b, a uint32) {
-	r = uint32(c.R * 65535.0)
-	g = uint32(c.G * 65535.0)
-	b = uint32(c.B * 65535.0)
+	r = uint32(c.R * 0xFFFF)
+	g = uint32(c.G * 0xFFFF)
+	b = uint32(c.B * 0xFFFF)
 	a = 0xFFFF
 
 	return
@@ -67,10 +67,10 @@ type XYZ struct {
 // overflow.
 func (c XYZ) RGBA() (r, g, b, a uint32) {
 	rr, gg, bb, aa := c.HDRRGBA()
-	r = uint32(rr * 65535.0)
-	g = uint32(gg * 65535.0)
-	b = uint32(bb * 65535.0)
-	a = uint32(aa * 65535.0)
+	r = uint32(rr * 0xFFFF)
+	g = uint32(gg * 0xFFFF)
+	b = uint32(bb * 0xFFFF)
+	a = uint32(aa * 0xFFFF)
 
 	return
 }
