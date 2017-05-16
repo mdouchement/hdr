@@ -11,7 +11,7 @@ func main() {
 	c := &cobra.Command{
 		Use: "hdrtools",
 	}
-	c.AddCommand(cmd.PSNRCommand)
+	c.AddCommand(cmd.QualityCommand)
 	c.AddCommand(cmd.ConvertCommand)
 
 	if err := c.Execute(); err != nil {
