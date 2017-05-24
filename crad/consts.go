@@ -19,7 +19,7 @@ const (
 
 	// RasterModeNormal for normal pixel positioning
 	RasterModeNormal = "normal"
-	// RasterModeSeparately for separately pixel' color positioning
+	// RasterModeSeparately for separately pixel's color positioning
 	RasterModeSeparately = "separately"
 
 	// CompressionGzip for gzip compression
