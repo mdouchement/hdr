@@ -16,6 +16,7 @@ Documentations:
 ## Supported file formats
 
 - Radiance RGBE/XYZE
+- CRAD, homemade HDR file format
 
 ## Supported tone mapping operators
 

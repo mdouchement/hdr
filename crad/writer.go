@@ -29,6 +29,68 @@ func newEncoder(w io.Writer, m hdr.Image, h *Header) *encoder {
 // Header stuff                         //
 //--------------------------------------//
 
+func (e *encoder) configureHeader() error {
+	// Header - Defaults
+	if e.h.Depth == 0 {
+		e.h.Depth = 32
+	}
+	if e.h.Compression == "" {
+		e.h.Compression = CompressionGzip
+	}
+	if e.h.RasterMode == "" {
+		e.h.RasterMode = RasterModeNormal
+	}
+	if e.h.Format == "" {
+		switch e.m.(type) {
+		case *hdr.RGB:
+			e.h.Format = FormatRGBE
+		case *hdr.XYZ:
+			e.h.Format = FormatXYZE
+		default:
+			return UnsupportedError("color model")
+		}
+	}
+
+	// Header - Format
+	switch e.h.Format {
+	case FormatRGBE:
+		e.channelSize = 1
+		e.nbOfchannel = 4
+		e.bytesAt = func(x, y int) []byte {
+			r, g, b, _ := e.m.HDRAt(x, y).HDRRGBA()
+			return toExposureBytes(r, g, b)
+		}
+	case FormatXYZE:
+		e.channelSize = 1
+		e.nbOfchannel = 4
+		e.bytesAt = func(x, y int) []byte {
+			xx, yy, zz, _ := e.m.HDRAt(x, y).HDRXYZA()
+			return toExposureBytes(xx, yy, zz)
+		}
+	case FormatRGB:
+		e.channelSize = 4
+		e.nbOfchannel = 3
+		e.bytesAt = func(x, y int) []byte {
+			r, g, b, _ := e.m.HDRAt(x, y).HDRRGBA()
+			return toBytes(r, g, b)
+		}
+	case FormatXYZ:
+		e.channelSize = 4
+		e.nbOfchannel = 3
+		e.bytesAt = func(x, y int) []byte {
+			xx, yy, zz, _ := e.m.HDRAt(x, y).HDRXYZA()
+			return toBytes(xx, yy, zz)
+		}
+	}
+
+	// Header - Size
+	d := e.m.Bounds().Size()
+	e.h.Width = d.X
+	e.h.Height = d.Y
+
+	return nil
+}
+
 func (e *encoder) writeHeader() error {
 	_, err := io.WriteString(e.w, header+"\n")
 	if err != nil {
@@ -103,63 +165,9 @@ func Encode(w io.Writer, m hdr.Image) error {
 func EncodeWithOptions(w io.Writer, m hdr.Image, h *Header) error {
 	e := newEncoder(w, m, h)
 
-	// Header - Defaults
-	if e.h.Depth == 0 {
-		e.h.Depth = 32
+	if err := e.configureHeader(); err != nil {
+		return err
 	}
-	if e.h.Compression == "" {
-		e.h.Compression = CompressionGzip
-	}
-	if e.h.RasterMode == "" {
-		e.h.RasterMode = RasterModeNormal
-	}
-	if e.h.Format == "" {
-		switch e.m.(type) {
-		case *hdr.RGB:
-			e.h.Format = FormatRGBE
-		case *hdr.XYZ:
-			e.h.Format = FormatXYZE
-		default:
-			return UnsupportedError("color model")
-		}
-	}
-
-	// Header - Format
-	switch e.h.Format {
-	case FormatRGBE:
-		e.channelSize = 1
-		e.nbOfchannel = 4
-		e.bytesAt = func(x, y int) []byte {
-			r, g, b, _ := e.m.HDRAt(x, y).HDRRGBA()
-			return toExposureBytes(r, g, b)
-		}
-	case FormatXYZE:
-		e.channelSize = 1
-		e.nbOfchannel = 4
-		e.bytesAt = func(x, y int) []byte {
-			xx, yy, zz, _ := e.m.HDRAt(x, y).HDRXYZA()
-			return toExposureBytes(xx, yy, zz)
-		}
-	case FormatRGB:
-		e.channelSize = 4
-		e.nbOfchannel = 3
-		e.bytesAt = func(x, y int) []byte {
-			r, g, b, _ := e.m.HDRAt(x, y).HDRRGBA()
-			return toBytes(r, g, b)
-		}
-	case FormatXYZ:
-		e.channelSize = 4
-		e.nbOfchannel = 3
-		e.bytesAt = func(x, y int) []byte {
-			xx, yy, zz, _ := e.m.HDRAt(x, y).HDRXYZA()
-			return toBytes(xx, yy, zz)
-		}
-	}
-
-	// Header - Size
-	d := e.m.Bounds().Size()
-	e.h.Width = d.X
-	e.h.Height = d.Y
 
 	if err := e.writeHeader(); err != nil {
 		return err
