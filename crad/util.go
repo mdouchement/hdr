@@ -7,8 +7,8 @@ import (
 	"math"
 )
 
-// ebytesToFloats converts Radiance RGBE/XYZE color space to RGB/XYZ color space.
-func ebytesToFloats(b0, b1, b2, e byte, exposure float64) (bb0, bb1, bb2 float64) {
+// fromExposureBytes converts Radiance RGBE/XYZE color space to RGB/XYZ color space.
+func fromExposureBytes(b0, b1, b2, e byte, exposure float64) (bb0, bb1, bb2 float64) {
 	if int(e) > 0 { // a non-zero pixel
 		ee := int(e) - (128 + 8)
 		f := math.Ldexp(1, ee) / exposure
@@ -21,8 +21,8 @@ func ebytesToFloats(b0, b1, b2, e byte, exposure float64) (bb0, bb1, bb2 float64
 	return
 }
 
-// floatsToEBytes converts RGB/XYZ color space to Radiance RGBE/XYZE (4 bytes slice).
-func floatsToEBytes(f1, f2, f3 float64) []byte {
+// toExposureBytes converts RGB/XYZ color space to Radiance RGBE/XYZE (4 bytes slice).
+func toExposureBytes(f1, f2, f3 float64) []byte {
 	pixel := make([]byte, 4)
 
 	max := math.Max(f1, f2)
@@ -41,7 +41,7 @@ func floatsToEBytes(f1, f2, f3 float64) []byte {
 	return pixel
 }
 
-func floatsToBytes(f1, f2, f3 float64) []byte {
+func toBytes(f1, f2, f3 float64) []byte {
 	pixel := make([]byte, 0, 3*4)
 
 	pixel = append(pixel, float32bytes(float32(f1))...)
@@ -59,7 +59,7 @@ func float32bytes(float float32) []byte {
 	return bytes
 }
 
-func bytesToFloats(pixel []byte) (float64, float64, float64) {
+func fromBytes(pixel []byte) (float64, float64, float64) {
 	f1 := float32frombytes(pixel[0:4])
 	f2 := float32frombytes(pixel[4:8])
 	f3 := float32frombytes(pixel[8:12])
@@ -74,23 +74,23 @@ func float32frombytes(bytes []byte) float32 {
 	return float
 }
 
-func csRGBToYCoCg(r, g, b float64) (y, co, cg float64) {
-	co = r - b
-	t := b + (co / 2)
-	cg = g - t
-	y = t + (cg / 2)
-
-	return
-}
-
-func csYCoCgToRGB(y, co, cg float64) (r, g, b float64) {
-	t := y - (cg / 2)
-	g = cg + t
-	b = t - (co / 2)
-	r = co + b
-
-	return
-}
+// func csRGBToYCoCg(r, g, b float64) (y, co, cg float64) {
+// 	co = r - b
+// 	t := b + (co / 2)
+// 	cg = g - t
+// 	y = t + (cg / 2)
+//
+// 	return
+// }
+//
+// func csYCoCgToRGB(y, co, cg float64) (r, g, b float64) {
+// 	t := y - (cg / 2)
+// 	g = cg + t
+// 	b = t - (co / 2)
+// 	r = co + b
+//
+// 	return
+// }
 
 func readUntil(r io.Reader, delimiter byte) (string, error) {
 	buf := &bytes.Buffer{}

@@ -5,14 +5,14 @@ const (
 )
 
 const (
-	// ColorModelRGBE for RGBE model
-	ColorModelRGBE = "RGBE"
-	// ColorModelXYZE for XYZE model
-	ColorModelXYZE = "XYZE"
-	// ColorModelRGB for RGB model
-	ColorModelRGB = "RGB"
-	// ColorModelXYZ for XYZ model
-	ColorModelXYZ = "XYZ"
+	// FormatRGBE for RGBE model
+	FormatRGBE = "RGBE"
+	// FormatXYZE for XYZE model
+	FormatXYZE = "XYZE"
+	// FormatRGB for RGB model
+	FormatRGB = "RGB"
+	// FormatXYZ for XYZ model
+	FormatXYZ = "XYZ"
 
 	// ColorModelYCoCgRE = "YCoCg-RE"
 	// ColorModelYCoCgR  = "YCoCg-R"
@@ -31,7 +31,38 @@ type Header struct {
 	Width       int    `json:"width"`
 	Height      int    `json:"height"`
 	Depth       int    `json:"depth"`
-	ColorModel  string `json:"color_model"`
+	Format      string `json:"format"`
 	RasterMode  string `json:"raster_mode"`
 	Compression string `json:"compression"`
 }
+
+var (
+	// Mode1 offers the better compression in RGBE/XYZE color model depending to
+	// the provided hdr.Image implementation. (quantization steps: 1%)
+	Mode1 = &Header{
+		Depth:       32,
+		RasterMode:  RasterModeSeparately,
+		Compression: CompressionGzip,
+	}
+	// Mode2 offers the better compression in XYZE that covers gamut. (quantization steps: 1%)
+	Mode2 = &Header{
+		Depth:       32,
+		Format:      FormatXYZE,
+		RasterMode:  RasterModeSeparately,
+		Compression: CompressionGzip,
+	}
+	// Mode3 offers a trade off in compression/quality in RGB. (quantization steps: 0.1%)
+	Mode3 = &Header{
+		Depth:       32,
+		Format:      FormatRGB,
+		RasterMode:  RasterModeSeparately,
+		Compression: CompressionGzip,
+	}
+	// Mode4 offers the better quality in XYZ that covers gamut. (quantization steps: 0.1%)
+	Mode4 = &Header{
+		Depth:       32,
+		Format:      FormatXYZ,
+		RasterMode:  RasterModeSeparately,
+		Compression: CompressionGzip,
+	}
+)

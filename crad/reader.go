@@ -52,34 +52,34 @@ func (d *decoder) parseHeader() error {
 	}
 	d.cr = newCompresserReader(d.r, d.h)
 
-	switch d.h.ColorModel {
-	case ColorModelRGBE:
+	switch d.h.Format {
+	case FormatRGBE:
 		d.config.ColorModel = hdrcolor.RGBModel
 		d.channelSize = 1
 		d.nbOfchannel = 4
 		d.convert = func(p []byte) (float64, float64, float64) {
-			return ebytesToFloats(p[0], p[1], p[2], p[3], 1)
+			return fromExposureBytes(p[0], p[1], p[2], p[3], 1)
 		}
-	case ColorModelXYZE:
+	case FormatXYZE:
 		d.config.ColorModel = hdrcolor.XYZModel
 		d.channelSize = 1
 		d.nbOfchannel = 4
 		d.convert = func(p []byte) (float64, float64, float64) {
-			return ebytesToFloats(p[0], p[1], p[2], p[3], 1)
+			return fromExposureBytes(p[0], p[1], p[2], p[3], 1)
 		}
-	case ColorModelRGB:
+	case FormatRGB:
 		d.channelSize = 4
 		d.nbOfchannel = 3
 		d.config.ColorModel = hdrcolor.RGBModel
 		d.convert = func(p []byte) (float64, float64, float64) {
-			return bytesToFloats(p)
+			return fromBytes(p)
 		}
-	case ColorModelXYZ:
+	case FormatXYZ:
 		d.config.ColorModel = hdrcolor.XYZModel
 		d.channelSize = 4
 		d.nbOfchannel = 3
 		d.convert = func(p []byte) (float64, float64, float64) {
-			return bytesToFloats(p)
+			return fromBytes(p)
 		}
 	}
 	d.config.Width = d.h.Width
@@ -98,15 +98,15 @@ func (d *decoder) decode(dst image.Image, y int, scanline []byte) {
 	for x := 0; x < d.config.Width; x++ {
 		b0, b1, b2 := d.convert(scanline[x*size : x*size+size])
 
-		switch d.h.ColorModel {
-		case ColorModelRGBE:
+		switch d.h.Format {
+		case FormatRGBE:
 			fallthrough
-		case ColorModelRGB:
+		case FormatRGB:
 			img := dst.(*hdr.RGB)
 			img.SetRGB(x, y, hdrcolor.RGB{R: b0, G: b1, B: b2})
-		case ColorModelXYZE:
+		case FormatXYZE:
 			fallthrough
-		case ColorModelXYZ:
+		case FormatXYZ:
 			img := dst.(*hdr.XYZ)
 			img.SetXYZ(x, y, hdrcolor.XYZ{X: b0, Y: b1, Z: b2})
 		}
@@ -123,15 +123,15 @@ func (d *decoder) decodeSeparately(dst image.Image, y int, scanline []byte) {
 
 		b0, b1, b2 := d.convert(pixel)
 
-		switch d.h.ColorModel {
-		case ColorModelRGBE:
+		switch d.h.Format {
+		case FormatRGBE:
 			fallthrough
-		case ColorModelRGB:
+		case FormatRGB:
 			img := dst.(*hdr.RGB)
 			img.SetRGB(x, y, hdrcolor.RGB{R: b0, G: b1, B: b2})
-		case ColorModelXYZE:
+		case FormatXYZE:
 			fallthrough
-		case ColorModelXYZ:
+		case FormatXYZ:
 			img := dst.(*hdr.XYZ)
 			img.SetXYZ(x, y, hdrcolor.XYZ{X: b0, Y: b1, Z: b2})
 		}
@@ -160,14 +160,14 @@ func Decode(r io.Reader) (img image.Image, err error) {
 	}
 
 	imgRect := image.Rect(0, 0, d.config.Width, d.config.Height)
-	switch d.h.ColorModel {
-	case ColorModelRGBE:
+	switch d.h.Format {
+	case FormatRGBE:
 		fallthrough
-	case ColorModelRGB:
+	case FormatRGB:
 		img = hdr.NewRGB(imgRect)
-	case ColorModelXYZE:
+	case FormatXYZE:
 		fallthrough
-	case ColorModelXYZ:
+	case FormatXYZ:
 		img = hdr.NewXYZ(imgRect)
 	default:
 		err = UnsupportedError("image mode")

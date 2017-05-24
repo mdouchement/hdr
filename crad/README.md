@@ -1,28 +1,91 @@
-# CRAD - Compressed Radiance RGBE/XYZE
+# CRAD
 
-File extension `.hdr2`
+The CRAD is an HDR image format aimed to be simple as possible.
+
+File extension `.crad`.
 
 
 ## General structure
 
 ```
-#?COMPRESSED_RADIANCE
-{"width":800,"height":600,"color_space":"RGBE","compression":"gzip"}
-DATA
+#?CRAD\n
+{"width":3272,"height":1280,"depth":32,"format":"RGBE","raster_mode":"normal","compression":"gzip"}\n
++----------------+
+|                |
+|     Raster     |
+|                |
++----------------+
 ```
 
-## Data structure
+### Magic number
 
-`DATA` is compressed with the specified algorithm in the JSON header (typically: `gzip`).
+The magic number of the the CRAD is `#?CRAD` at the first line.
 
-Uncompressed `DATA` are slices of width length, each slice stores channels separately.
+### Header
 
-For example, an uncompressed of RGBE 3x3p:
+The header is a one-line JSON string at the second line.
+
+### Raster
+
+The raster contains all the pixels of the image.
+
+#### Compression
+
+The raster is compressed with the specified algorithm in the JSON header (typically: `gzip`)
+
+#### Format
+
+- RGBE and XYZE
+
+These formats are based on the Radiance RGBE enconding.
+A pixel is stored on a 4-byte representation where three 8-bit mantissas shared a common 8-bit exponent.
+It offers a very compact storage of 32-bit floating points.
+The net result is a format that has an absolute accuracy of about 1%, covering a range of over 76 orders of magnitude.
+
+- RGB and XYZ
+
+These formats are based on the representation of a 32-bit floating points in bytes.
+A pixel is stored on a 12-byte representation where a channel is coded on 4 bytes in little endian order.
+It offers a great absolute accuracy.
+
+
+#### Raster mode
+
+Uncompressed `Raster` is stored in several modes:
+
+- Normal mode
+
+Each pixels' bytes are stored in contiguous order.
+
+RGBE example:
 ```
-R{0,0}R{1,0}R{2,0}B{0,0}B{1,0}B{2,0}G{0,0}G{1,0}G{2,0}E{0,0}E{1,0}E{2,0}
-R{0,1}R{1,1}R{2,1}B{0,1}B{1,1}B{2,1}G{0,1}G{1,1}G{2,1}E{0,1}E{1,1}E{2,1}
-R{0,2}R{1,2}R{2,2}B{0,2}B{1,2}B{2,2}G{0,2}G{1,2}G{2,2}E{0,2}E{1,2}E{2,2}
+rgbergbergbe
+rgbergbergbe
 ```
-> `channel{x,y}`
+> This is the same for XYZE.
 
-This is the same for XYZE.
+RGB example:
+```
+rrrrggggbbbbrrrrggggbbbbrrrrggggbbbb
+rrrrggggbbbbrrrrggggbbbbrrrrggggbbbb
+```
+> This is the same for XYZ.
+
+- Separately mode
+
+The color channels are stored separately in order to improve the compression ratio.
+
+RGBE example:
+```
+rrrgggbbbeee
+rrrgggbbbeee
+```
+> This is the same for XYZE.
+
+RGB example:
+```
+rrrrrrrrrrrrggggggggggggbbbbbbbbbbbb
+rrrrrrrrrrrrggggggggggggbbbbbbbbbbbb
+rrrrrrrrrrrrggggggggggggbbbbbbbbbbbb
+```
+> This is the same for XYZ.
