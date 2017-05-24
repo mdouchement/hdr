@@ -8,6 +8,7 @@ import (
 
 	"github.com/mdouchement/hdr"
 	// Import RGBE decoder
+	_ "github.com/mdouchement/hdr/crad"
 	_ "github.com/mdouchement/hdr/rgbe"
 	"github.com/mdouchement/hdr/util"
 	"github.com/pkg/errors"
