@@ -22,17 +22,17 @@ var (
 		RunE:  convertAction,
 	}
 
-	rgbe2xyze bool
-	xyze2rgbe bool
-	hdr2crad  bool
-	crad2hdr  bool
+	toxyze bool
+	torgbe bool
+	tohdr  bool
+	tocrad bool
 )
 
 func init() {
-	ConvertCommand.Flags().BoolVarP(&rgbe2xyze, "rgbe2xyze", "", false, "Radiance RGBE to Radiance XYZE")
-	ConvertCommand.Flags().BoolVarP(&xyze2rgbe, "xyze2rgbe", "", false, "Radiance XYZE to Radiance RGBE")
-	ConvertCommand.Flags().BoolVarP(&hdr2crad, "hdr2crad", "", false, "Radiance RGBE/XYZE to CRAD")
-	ConvertCommand.Flags().BoolVarP(&crad2hdr, "crad2hdr", "", false, "CRAD to Radiance RGBE/XYZE")
+	ConvertCommand.Flags().BoolVarP(&toxyze, "to-xyze", "", false, "Converts to Radiance XYZE")
+	ConvertCommand.Flags().BoolVarP(&torgbe, "to-rgbe", "", false, "Converts to Radiance RGBE")
+	ConvertCommand.Flags().BoolVarP(&tohdr, "to-hdr", "", false, "Converts to Radiance RGBE/XYZE")
+	ConvertCommand.Flags().BoolVarP(&tocrad, "to-crad", "", false, "Converts to CRAD")
 }
 
 func convertAction(c *cobra.Command, args []string) error {
@@ -61,14 +61,14 @@ func convertAction(c *cobra.Command, args []string) error {
 
 	hdrm := m.(hdr.Image)
 	switch {
-	case rgbe2xyze:
+	case toxyze:
 		rgbe.Encode(fo, toXYZ(hdrm))
-	case xyze2rgbe:
+	case torgbe:
 		rgbe.Encode(fo, toRGB(hdrm))
-	case hdr2crad:
-		crad.Encode(fo, hdrm)
-	case crad2hdr:
+	case tohdr:
 		rgbe.Encode(fo, hdrm)
+	case tocrad:
+		crad.Encode(fo, hdrm)
 	default:
 		return errors.New("convert: No converion flage provided")
 	}

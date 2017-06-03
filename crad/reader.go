@@ -82,6 +82,13 @@ func (d *decoder) parseHeader() error {
 		d.convert = func(p []byte) (float64, float64, float64) {
 			return format.FromBytes(p)
 		}
+	case FormatLogLuv:
+		d.config.ColorModel = hdrcolor.XYZModel
+		d.channelSize = 1
+		d.nbOfchannel = 4
+		d.convert = func(p []byte) (float64, float64, float64) {
+			return format.LogLuvToXYZ(p[0], p[1], p[2], p[3])
+		}
 	}
 	d.config.Width = d.h.Width
 	d.config.Height = d.h.Height
@@ -107,6 +114,8 @@ func (d *decoder) decode(dst image.Image, y int, scanline []byte) {
 			img.SetRGB(x, y, hdrcolor.RGB{R: b0, G: b1, B: b2})
 		case FormatXYZE:
 			fallthrough
+		case FormatLogLuv:
+			fallthrough
 		case FormatXYZ:
 			img := dst.(*hdr.XYZ)
 			img.SetXYZ(x, y, hdrcolor.XYZ{X: b0, Y: b1, Z: b2})
@@ -131,6 +140,8 @@ func (d *decoder) decodeSeparately(dst image.Image, y int, scanline []byte) {
 			img := dst.(*hdr.RGB)
 			img.SetRGB(x, y, hdrcolor.RGB{R: b0, G: b1, B: b2})
 		case FormatXYZE:
+			fallthrough
+		case FormatLogLuv:
 			fallthrough
 		case FormatXYZ:
 			img := dst.(*hdr.XYZ)
@@ -167,6 +178,8 @@ func Decode(r io.Reader) (img image.Image, err error) {
 	case FormatRGB:
 		img = hdr.NewRGB(imgRect)
 	case FormatXYZE:
+		fallthrough
+	case FormatLogLuv:
 		fallthrough
 	case FormatXYZ:
 		img = hdr.NewXYZ(imgRect)

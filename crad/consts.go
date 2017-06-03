@@ -13,6 +13,8 @@ const (
 	FormatRGB = "RGB"
 	// FormatXYZ for XYZ model
 	FormatXYZ = "XYZ"
+	// FormatLogLuv for LogLuv model
+	FormatLogLuv = "LogLuv"
 
 	// ColorModelYCoCgRE = "YCoCg-RE"
 	// ColorModelYCoCgR  = "YCoCg-R"
@@ -62,6 +64,13 @@ var (
 	Mode4 = &Header{
 		Depth:       32,
 		Format:      FormatXYZ,
+		RasterMode:  RasterModeSeparately,
+		Compression: CompressionGzip,
+	}
+	// Mode5 offers the better compression and quality in LogLuv that covers gamut. (quantization steps: 0.1%)
+	Mode5 = &Header{
+		Depth:       32,
+		Format:      FormatLogLuv,
 		RasterMode:  RasterModeSeparately,
 		Compression: CompressionGzip,
 	}

@@ -5,6 +5,7 @@ import (
 	"image"
 	"os"
 	"path/filepath"
+	"time"
 
 	"github.com/mdouchement/hdr"
 	// Import RGBE decoder
@@ -35,11 +36,12 @@ func qualityAction(c *cobra.Command, args []string) error {
 	}
 	defer f1.Close()
 
+	start := time.Now()
 	m1, fname, err := image.Decode(f1)
 	if err != nil {
 		return errors.Wrap(err, "quality:")
 	}
-	fmt.Printf("Read image (%dx%dp - %s) %s\n", m1.Bounds().Dx(), m1.Bounds().Dy(), fname, filepath.Base(args[0]))
+	fmt.Printf("Read image (%dx%dp - %s - %v) %s\n", m1.Bounds().Dx(), m1.Bounds().Dy(), fname, time.Since(start), filepath.Base(args[0]))
 
 	f2, err := os.Open(args[1])
 	if err != nil {
@@ -47,11 +49,12 @@ func qualityAction(c *cobra.Command, args []string) error {
 	}
 	defer f2.Close()
 
+	start = time.Now()
 	m2, fname, err := image.Decode(f2)
 	if err != nil {
 		return errors.Wrap(err, "quality:")
 	}
-	fmt.Printf("Read image (%dx%dp - %s) %s\n", m2.Bounds().Dx(), m2.Bounds().Dy(), fname, filepath.Base(args[1]))
+	fmt.Printf("Read image (%dx%dp - %s - %v) %s\n", m2.Bounds().Dx(), m2.Bounds().Dy(), fname, time.Since(start), filepath.Base(args[1]))
 
 	hdrm1 := m1.(hdr.Image)
 	hdrm2 := m2.(hdr.Image)

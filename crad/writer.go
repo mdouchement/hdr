@@ -82,6 +82,13 @@ func (e *encoder) configureHeader() error {
 			xx, yy, zz, _ := e.m.HDRAt(x, y).HDRXYZA()
 			return format.ToBytes(xx, yy, zz)
 		}
+	case FormatLogLuv:
+		e.channelSize = 1
+		e.nbOfchannel = 4
+		e.bytesAt = func(x, y int) []byte {
+			xx, yy, zz, _ := e.m.HDRAt(x, y).HDRXYZA()
+			return format.XYZToLogLuv(xx, yy, zz)
+		}
 	}
 
 	// Header - Size
@@ -159,7 +166,7 @@ func (e *encoder) encodeSeparately(w compresserWriter) error {
 
 // Encode writes the Image m to w in CRAD format.
 func Encode(w io.Writer, m hdr.Image) error {
-	return EncodeWithOptions(w, m, Mode1)
+	return EncodeWithOptions(w, m, Mode5)
 }
 
 // EncodeWithOptions writes the Image m to w in CRAD format.
