@@ -7,6 +7,7 @@ import (
 	"path/filepath"
 
 	"github.com/mdouchement/hdr"
+	"github.com/mdouchement/hdr/crad"
 	"github.com/mdouchement/hdr/rgbe"
 	"github.com/pkg/errors"
 	"github.com/spf13/cobra"
@@ -23,11 +24,15 @@ var (
 
 	rgbe2xyze bool
 	xyze2rgbe bool
+	hdr2crad  bool
+	crad2hdr  bool
 )
 
 func init() {
 	ConvertCommand.Flags().BoolVarP(&rgbe2xyze, "rgbe2xyze", "", false, "Radiance RGBE to Radiance XYZE")
 	ConvertCommand.Flags().BoolVarP(&xyze2rgbe, "xyze2rgbe", "", false, "Radiance XYZE to Radiance RGBE")
+	ConvertCommand.Flags().BoolVarP(&hdr2crad, "hdr2crad", "", false, "Radiance RGBE/XYZE to CRAD")
+	ConvertCommand.Flags().BoolVarP(&crad2hdr, "crad2hdr", "", false, "CRAD to Radiance RGBE/XYZE")
 }
 
 func convertAction(c *cobra.Command, args []string) error {
@@ -60,6 +65,10 @@ func convertAction(c *cobra.Command, args []string) error {
 		rgbe.Encode(fo, toXYZ(hdrm))
 	case xyze2rgbe:
 		rgbe.Encode(fo, toRGB(hdrm))
+	case hdr2crad:
+		crad.Encode(fo, hdrm)
+	case crad2hdr:
+		rgbe.Encode(fo, hdrm)
 	default:
 		return errors.New("convert: No converion flage provided")
 	}

@@ -6,6 +6,7 @@ import (
 	"io"
 
 	"github.com/mdouchement/hdr"
+	"github.com/mdouchement/hdr/format"
 )
 
 type encoder struct {
@@ -58,28 +59,28 @@ func (e *encoder) configureHeader() error {
 		e.nbOfchannel = 4
 		e.bytesAt = func(x, y int) []byte {
 			r, g, b, _ := e.m.HDRAt(x, y).HDRRGBA()
-			return toExposureBytes(r, g, b)
+			return format.ToRadianceBytes(r, g, b)
 		}
 	case FormatXYZE:
 		e.channelSize = 1
 		e.nbOfchannel = 4
 		e.bytesAt = func(x, y int) []byte {
 			xx, yy, zz, _ := e.m.HDRAt(x, y).HDRXYZA()
-			return toExposureBytes(xx, yy, zz)
+			return format.ToRadianceBytes(xx, yy, zz)
 		}
 	case FormatRGB:
 		e.channelSize = 4
 		e.nbOfchannel = 3
 		e.bytesAt = func(x, y int) []byte {
 			r, g, b, _ := e.m.HDRAt(x, y).HDRRGBA()
-			return toBytes(r, g, b)
+			return format.ToBytes(r, g, b)
 		}
 	case FormatXYZ:
 		e.channelSize = 4
 		e.nbOfchannel = 3
 		e.bytesAt = func(x, y int) []byte {
 			xx, yy, zz, _ := e.m.HDRAt(x, y).HDRXYZA()
-			return toBytes(xx, yy, zz)
+			return format.ToBytes(xx, yy, zz)
 		}
 	}
 

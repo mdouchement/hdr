@@ -7,6 +7,7 @@ import (
 	"io"
 
 	"github.com/mdouchement/hdr"
+	"github.com/mdouchement/hdr/format"
 	"github.com/mdouchement/hdr/hdrcolor"
 )
 
@@ -58,28 +59,28 @@ func (d *decoder) parseHeader() error {
 		d.channelSize = 1
 		d.nbOfchannel = 4
 		d.convert = func(p []byte) (float64, float64, float64) {
-			return fromExposureBytes(p[0], p[1], p[2], p[3], 1)
+			return format.FromRadianceBytes(p[0], p[1], p[2], p[3], 1)
 		}
 	case FormatXYZE:
 		d.config.ColorModel = hdrcolor.XYZModel
 		d.channelSize = 1
 		d.nbOfchannel = 4
 		d.convert = func(p []byte) (float64, float64, float64) {
-			return fromExposureBytes(p[0], p[1], p[2], p[3], 1)
+			return format.FromRadianceBytes(p[0], p[1], p[2], p[3], 1)
 		}
 	case FormatRGB:
 		d.channelSize = 4
 		d.nbOfchannel = 3
 		d.config.ColorModel = hdrcolor.RGBModel
 		d.convert = func(p []byte) (float64, float64, float64) {
-			return fromBytes(p)
+			return format.FromBytes(p)
 		}
 	case FormatXYZ:
 		d.config.ColorModel = hdrcolor.XYZModel
 		d.channelSize = 4
 		d.nbOfchannel = 3
 		d.convert = func(p []byte) (float64, float64, float64) {
-			return fromBytes(p)
+			return format.FromBytes(p)
 		}
 	}
 	d.config.Width = d.h.Width

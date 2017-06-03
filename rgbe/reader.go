@@ -13,6 +13,7 @@ import (
 	"strings"
 
 	"github.com/mdouchement/hdr"
+	"github.com/mdouchement/hdr/format"
 	"github.com/mdouchement/hdr/hdrcolor"
 )
 
@@ -118,7 +119,7 @@ func (d *decoder) appendHeaderAttributes(token string) error {
 
 func (d *decoder) decode(dst image.Image, y int, scanline []byte) {
 	for x := 0; x < d.config.Width; x++ {
-		b0, b1, b2 := bytesToFloats(
+		b0, b1, b2 := format.FromRadianceBytes(
 			scanline[4*x],
 			scanline[4*x+1],
 			scanline[4*x+2],
@@ -138,7 +139,7 @@ func (d *decoder) decode(dst image.Image, y int, scanline []byte) {
 
 func (d *decoder) decodeRLE(dst image.Image, y int, scanline []byte) {
 	for x := 0; x < d.config.Width; x++ {
-		b0, b1, b2 := bytesToFloats(
+		b0, b1, b2 := format.FromRadianceBytes(
 			scanline[x],
 			scanline[x+d.config.Width],
 			scanline[x+d.config.Width*2],

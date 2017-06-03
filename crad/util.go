@@ -2,77 +2,8 @@ package crad
 
 import (
 	"bytes"
-	"encoding/binary"
 	"io"
-	"math"
 )
-
-// fromExposureBytes converts Radiance RGBE/XYZE color space to RGB/XYZ color space.
-func fromExposureBytes(b0, b1, b2, e byte, exposure float64) (bb0, bb1, bb2 float64) {
-	if int(e) > 0 { // a non-zero pixel
-		ee := int(e) - (128 + 8)
-		f := math.Ldexp(1, ee) / exposure
-
-		bb0 = float64(b0) * f
-		bb1 = float64(b1) * f
-		bb2 = float64(b2) * f
-	}
-
-	return
-}
-
-// toExposureBytes converts RGB/XYZ color space to Radiance RGBE/XYZE (4 bytes slice).
-func toExposureBytes(f1, f2, f3 float64) []byte {
-	pixel := make([]byte, 4)
-
-	max := math.Max(f1, f2)
-	max = math.Max(max, f3)
-
-	if max > 1e-32 { // a non-zero pixel
-		mantissa, exponent := math.Frexp(max)
-		max = mantissa * 256 / max
-
-		pixel[0] = byte(max * f1)       // R or X
-		pixel[1] = byte(max * f2)       // G or Y
-		pixel[2] = byte(max * f3)       // B or Z
-		pixel[3] = byte(exponent + 128) // exposure (128 is the bias)
-	}
-
-	return pixel
-}
-
-func toBytes(f1, f2, f3 float64) []byte {
-	pixel := make([]byte, 0, 3*4)
-
-	pixel = append(pixel, float32bytes(float32(f1))...)
-	pixel = append(pixel, float32bytes(float32(f2))...)
-	pixel = append(pixel, float32bytes(float32(f3))...)
-
-	return pixel
-}
-
-func float32bytes(float float32) []byte {
-	bits := math.Float32bits(float)
-	bytes := make([]byte, 4)
-	binary.LittleEndian.PutUint32(bytes, bits)
-
-	return bytes
-}
-
-func fromBytes(pixel []byte) (float64, float64, float64) {
-	f1 := float32frombytes(pixel[0:4])
-	f2 := float32frombytes(pixel[4:8])
-	f3 := float32frombytes(pixel[8:12])
-
-	return float64(f1), float64(f2), float64(f3)
-}
-
-func float32frombytes(bytes []byte) float32 {
-	bits := binary.LittleEndian.Uint32(bytes)
-	float := math.Float32frombits(bits)
-
-	return float
-}
 
 // func csRGBToYCoCg(r, g, b float64) (y, co, cg float64) {
 // 	co = r - b

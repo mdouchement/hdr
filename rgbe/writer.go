@@ -6,6 +6,7 @@ import (
 	"io"
 
 	"github.com/mdouchement/hdr"
+	"github.com/mdouchement/hdr/format"
 )
 
 // RLEWrites allows to write image file with run-length encoding.
@@ -64,7 +65,7 @@ func (e *encoder) encode() error {
 	var err error
 	for y := 0; y < d.Y; y++ {
 		for x := 0; x < d.X; x++ {
-			_, err = w.Write(floatsToBytes(ar.at(x, y)))
+			_, err = w.Write(format.ToRadianceBytes(ar.at(x, y)))
 
 			if err != nil {
 				return err
@@ -93,7 +94,7 @@ func (e *encoder) encodeRLE() error {
 	for y := 0; y < d.Y; y++ {
 		// Prepare RLE treatment for each channel.
 		for x := 0; x < d.X; x++ {
-			pixel := floatsToBytes(ar.at(x, y))
+			pixel := format.ToRadianceBytes(ar.at(x, y))
 			scanline[x] = pixel[0]       // R or X
 			scanline[x+d.X] = pixel[1]   // G or Y
 			scanline[x+2*d.X] = pixel[2] // B or Z
