@@ -7,6 +7,7 @@ import (
 
 	"github.com/mdouchement/hdr"
 	"github.com/mdouchement/hdr/format"
+	"github.com/mdouchement/hdr/hdrcolor"
 )
 
 type encoder struct {
@@ -42,10 +43,10 @@ func (e *encoder) configureHeader() error {
 		e.h.RasterMode = RasterModeNormal
 	}
 	if e.h.Format == "" {
-		switch e.m.(type) {
-		case *hdr.RGB:
+		switch e.m.ColorModel() {
+		case hdrcolor.RGBModel:
 			e.h.Format = FormatRGBE
-		case *hdr.XYZ:
+		case hdrcolor.XYZModel:
 			e.h.Format = FormatXYZE
 		default:
 			return UnsupportedError("color model")

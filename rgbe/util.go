@@ -5,6 +5,7 @@ import (
 	"io"
 
 	"github.com/mdouchement/hdr"
+	"github.com/mdouchement/hdr/hdrcolor"
 )
 
 const (
@@ -79,16 +80,16 @@ type ar struct {
 func newAR(m hdr.Image) *ar {
 	s := &ar{}
 
-	switch v := m.(type) {
-	case *hdr.RGB:
+	switch m.ColorModel() {
+	case hdrcolor.RGBModel:
 		s.at = func(x, y int) (float64, float64, float64) {
-			p := v.RGBAt(x, y)
-			return p.R, p.G, p.B
+			r, g, b, _ := m.HDRAt(x, y).HDRRGBA()
+			return r, g, b
 		}
-	case *hdr.XYZ:
+	case hdrcolor.XYZModel:
 		s.at = func(x, y int) (float64, float64, float64) {
-			p := v.XYZAt(x, y)
-			return p.X, p.Y, p.Z
+			X, Y, Z, _ := m.HDRAt(x, y).HDRXYZA()
+			return X, Y, Z
 		}
 	}
 

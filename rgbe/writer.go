@@ -7,6 +7,7 @@ import (
 
 	"github.com/mdouchement/hdr"
 	"github.com/mdouchement/hdr/format"
+	"github.com/mdouchement/hdr/hdrcolor"
 )
 
 // RLEWrites allows to write image file with run-length encoding.
@@ -195,10 +196,10 @@ func (e *encoder) writeNonRun(w *bufio.Writer, scanline []byte) error {
 func Encode(w io.Writer, m hdr.Image) error {
 	e := newEncoder(w, m)
 
-	switch m.(type) {
-	case *hdr.RGB:
+	switch m.ColorModel() {
+	case hdrcolor.RGBModel:
 		e.mode = mRGBE
-	case *hdr.XYZ:
+	case hdrcolor.XYZModel:
 		e.mode = mXYZE
 	default:
 		return UnsupportedError("color space")
