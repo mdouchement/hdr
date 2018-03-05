@@ -7,3 +7,14 @@ func IntAbs(x int) int {
 	}
 	return x
 }
+
+// Clamp force v to be between min and max.
+func Clamp(min, max, v float64) float64 {
+	if v < min {
+		v = 0
+	}
+	if v > max {
+		v = max
+	}
+	return v
+}

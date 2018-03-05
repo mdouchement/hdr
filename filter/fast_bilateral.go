@@ -14,6 +14,7 @@ import (
 )
 
 const (
+	dimension = 5 // x, y & colors (z1, z2, z3)
 	// padding space
 	paddingS = 2
 	// padding range (color)
@@ -27,11 +28,14 @@ const (
 // A FastBilateral filter is a non-linear, edge-preserving and noise-reducing
 // smoothing filter for images. The intensity value at each pixel in an image is
 // replaced by a weighted average of intensity values from nearby pixels.
+//
+// References:
+// https://github.com/mdouchement/bilateral
+// http://people.csail.mit.edu/sparis/bf/
 type FastBilateral struct {
 	HDRImage   hdr.Image
 	SigmaRange float64
 	SigmaSpace float64
-	dimension  int
 	minmaxOnce sync.Once
 	min        []float64
 	max        []float64
@@ -43,16 +47,22 @@ type FastBilateral struct {
 	// 4 -> smallColor3Depth (color)
 	size []int
 	grid *grid
+	auto bool
+}
+
+// NewFastBilateralAuto instanciates a new FastBilateral with automatic sigma values.
+func NewFastBilateralAuto(m hdr.Image) *FastBilateral {
+	f := NewFastBilateral(m, 16, 0.1)
+	f.auto = true
+	return f
 }
 
 // NewFastBilateral instanciates a new FastBilateral.
-func NewFastBilateral(img hdr.Image, sigmaSpace, sigmaRange float64) *FastBilateral {
-	dimension := 5 // default: x, y, colors (z1, z2, z3)
+func NewFastBilateral(m hdr.Image, sigmaSpace, sigmaRange float64) *FastBilateral {
 	fbl := &FastBilateral{
-		HDRImage:   img,
+		HDRImage:   m,
 		SigmaRange: sigmaRange,
 		SigmaSpace: sigmaSpace,
-		dimension:  dimension,
 		min:        make([]float64, dimension-2),
 		max:        make([]float64, dimension-2),
 		size:       make([]int, dimension),
@@ -65,8 +75,8 @@ func NewFastBilateral(img hdr.Image, sigmaSpace, sigmaRange float64) *FastBilate
 	return fbl
 }
 
-// Execute runs the bilateral filter.
-func (f *FastBilateral) Execute() {
+// Perform runs the bilateral filter.
+func (f *FastBilateral) Perform() {
 	f.minmaxOnce.Do(f.minmax)
 	f.downsampling()
 	f.convolution()
@@ -82,17 +92,22 @@ func (f *FastBilateral) Bounds() image.Rectangle {
 	return f.HDRImage.Bounds()
 }
 
+// Size implements Image.
+func (f *FastBilateral) Size() int {
+	return f.HDRImage.Size()
+}
+
 // HDRAt computes the interpolation and returns the filtered color at the given coordinates.
 func (f *FastBilateral) HDRAt(x, y int) hdrcolor.Color {
 	pixel := f.HDRImage.HDRAt(x, y)
 	r, g, b, _ := pixel.HDRRGBA()
 	rgb := []float64{r, g, b}
 
-	offset := make([]float64, f.dimension)
+	offset := make([]float64, dimension)
 	// Grid coords
 	offset[0] = float64(x)/f.SigmaSpace + paddingS // Grid width
 	offset[1] = float64(y)/f.SigmaSpace + paddingS // Grid height
-	for z := 0; z < f.dimension-2; z++ {
+	for z := 0; z < dimension-2; z++ {
 		offset[2+z] = (rgb[z]-f.min[z])/f.SigmaRange + paddingR // Grid color
 	}
 
@@ -142,15 +157,10 @@ func (f *FastBilateral) ResultImage() hdr.Image {
 }
 
 func (f *FastBilateral) minmax() {
-	gray := true
 	d := f.HDRImage.Bounds()
 	for y := 0; y < d.Dy(); y++ {
 		for x := 0; x < d.Dx(); x++ {
-			pixel := f.HDRImage.HDRAt(x, y)
-			r, g, b, _ := pixel.HDRRGBA()
-			if gray && (r != g || g != b) {
-				gray = false
-			}
+			r, g, b, _ := f.HDRImage.HDRAt(x, y).HDRRGBA()
 			for ci, c := range []float64{r, g, b} {
 				f.min[ci] = math.Min(f.min[ci], c)
 				f.max[ci] = math.Max(f.max[ci], c)
@@ -158,9 +168,19 @@ func (f *FastBilateral) minmax() {
 		}
 	}
 
+	if f.auto {
+		min := math.Inf(1)
+		max := math.Inf(-1)
+		for n := 0; n < dimension-2; n++ {
+			min = math.Min(min, f.min[n])
+			max = math.Max(max, f.max[n])
+		}
+		f.SigmaRange = (max - min) * 0.1
+	}
+
 	f.size[0] = int(float64(d.Dx()-1)/f.SigmaSpace) + 1 + 2*paddingS
 	f.size[1] = int(float64(d.Dy()-1)/f.SigmaSpace) + 1 + 2*paddingS
-	for c := 0; c < f.dimension-2; c++ {
+	for c := 0; c < dimension-2; c++ {
 		f.size[2+c] = int((f.max[c]-f.min[c])/f.SigmaRange) + 1 + 2*paddingR
 	}
 
@@ -171,9 +191,9 @@ func (f *FastBilateral) minmax() {
 
 func (f *FastBilateral) downsampling() {
 	d := f.HDRImage.Bounds()
-	offset := make([]int, f.dimension)
+	offset := make([]int, dimension)
 
-	dim := f.dimension - 2
+	dim := dimension - 2
 	f.grid = newGrid(f.size, dim)
 
 	for x := 0; x < d.Dx(); x++ {
@@ -182,11 +202,10 @@ func (f *FastBilateral) downsampling() {
 		for y := 0; y < d.Dy(); y++ {
 			offset[1] = int(1*float64(y)/f.SigmaSpace+0.5) + paddingS
 
-			pixel := f.HDRImage.HDRAt(x, y)
-			r, g, b, _ := pixel.HDRRGBA()
+			r, g, b, _ := f.HDRImage.HDRAt(x, y).HDRRGBA()
 			rgb := []float64{r, g, b}
 
-			for z := 0; z < f.dimension-2; z++ {
+			for z := 0; z < dimension-2; z++ {
 				offset[2+z] = int((rgb[z]-f.min[z])/f.SigmaRange+0.5) + paddingR
 			}
 
@@ -198,7 +217,7 @@ func (f *FastBilateral) downsampling() {
 }
 
 func (f *FastBilateral) convolution() {
-	dim := f.dimension - 2
+	dim := dimension - 2
 	buffer := newGrid(f.size, dim)
 
 	var vg *cell
@@ -206,8 +225,8 @@ func (f *FastBilateral) convolution() {
 	var curr *cell
 	var next *cell
 
-	for dim := 0; dim < f.dimension; dim++ { // x, y, and colors depths
-		off := make([]int, f.dimension)
+	for dim := 0; dim < dimension; dim++ { // x, y, and colors depths
+		off := make([]int, dimension)
 		off[dim] = 1 // Wanted dimension offset
 
 		for n := 0; n < 2; n++ { // itterations (pass?)
@@ -239,41 +258,11 @@ func (f *FastBilateral) convolution() {
 }
 
 // Perform linear interpolation.
-// For 3 dimensions, it will perform this static algo:
-//
-// func (f *FastBilateral) trilinearInterpolation(gx, gy, gz float64) float64 {
-// 	width := f.size[0]
-// 	height := f.size[1]
-// 	depth := f.size[2+c1]
-//
-// 	// Index
-// 	x := clamp(0, width-1, int(gx))
-// 	xx := clamp(0, width-1, x+1)
-// 	y := clamp(0, height-1, int(gy))
-// 	yy := clamp(0, height-1, y+1)
-// 	z := clamp(0, depth-1, int(gz))
-// 	zz := clamp(0, depth-1, z+1)
-//
-// 	// Alpha
-// 	xa := gx - float64(x)
-// 	ya := gy - float64(y)
-// 	za := gz - float64(z)
-//
-// 	// Interpolation
-// 	return (1.0-ya)*(1.0-xa)*(1.0-za)*f.grid.At(x, y, z).colors.At(c1, 0) +
-// 		(1.0-ya)*xa*(1.0-za)*f.grid.At(xx, y, z).colors.At(c1, 0) +
-// 		ya*(1.0-xa)*(1.0-za)*f.grid.At(x, yy, z).colors.At(c1, 0) +
-// 		ya*xa*(1.0-za)*f.grid.At(xx, yy, z).colors.At(c1, 0) +
-// 		(1.0-ya)*(1.0-xa)*za*f.grid.At(x, y, zz).colors.At(c1, 0) +
-// 		(1.0-ya)*xa*za*f.grid.At(xx, y, zz).colors.At(c1, 0) +
-// 		ya*(1.0-xa)*za*f.grid.At(x, yy, zz).colors.At(c1, 0) +
-// 		ya*xa*za*f.grid.At(xx, yy, zz).colors.At(c1, 0)
-// }
 func (f *FastBilateral) nLinearInterpolation(offset ...float64) *cell {
-	permutations := 1 << uint(f.dimension)
-	index := make([]int, f.dimension)
-	indexx := make([]int, f.dimension)
-	alpha := make([]float64, f.dimension)
+	permutations := 1 << uint(dimension)
+	index := make([]int, dimension)
+	indexx := make([]int, dimension)
+	alpha := make([]float64, dimension)
 
 	for n, s := range f.size {
 		off := offset[n]
@@ -284,14 +273,14 @@ func (f *FastBilateral) nLinearInterpolation(offset ...float64) *cell {
 	}
 
 	// Interpolation
-	c := &cell{colors: mat.NewVecDense(f.dimension-2, nil)}
+	c := &cell{colors: mat.NewVecDense(dimension-2, nil)}
 	bitset := big.NewInt(int64(0)) // Use to perform all the interpolation's permutations
-	off := make([]int, f.dimension)
+	off := make([]int, dimension)
 	var scale float64
 	for i := 0; i < permutations; i++ {
 		bitset.SetUint64(uint64(i))
 		scale = 1.0
-		for n := 0; n < f.dimension; n++ {
+		for n := 0; n < dimension; n++ {
 			if bitset.Bit(n) == 1 {
 				off[n] = index[n]
 				scale *= 1.0 - alpha[n]

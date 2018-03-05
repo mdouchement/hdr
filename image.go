@@ -18,6 +18,43 @@ type Image interface {
 	Size() int
 }
 
+// ImageSet is an Image where we can set pixels.
+type ImageSet interface {
+	// Set adds pixel to Image at given x, y.
+	Set(x, y int, c color.Color)
+}
+
+// Copy copies the src into a new image.
+func Copy(src Image) Image {
+	switch m := src.(type) {
+	case *RGB:
+		dst := NewRGB(m.Bounds())
+		copy(dst.Pix, m.Pix)
+		return dst
+	case *RGB64:
+		dst := NewRGB64(m.Bounds())
+		copy(dst.Pix, m.Pix)
+		return dst
+	case *XYZ:
+		dst := NewXYZ(m.Bounds())
+		copy(dst.Pix, m.Pix)
+		return dst
+	case *XYZ64:
+		dst := NewXYZ64(m.Bounds())
+		copy(dst.Pix, m.Pix)
+		return dst
+	default:
+		// fallback
+		dst := NewRGB64(m.Bounds())
+		for y := 0; y < m.Bounds().Dy(); y++ {
+			for x := 0; x < m.Bounds().Dx(); x++ {
+				dst.Set(x, y, src.HDRAt(x, y))
+			}
+		}
+		return dst
+	}
+}
+
 //===============//
 // RGB           //
 //===============//
@@ -80,7 +117,7 @@ func (p *RGB) PixOffset(x, y int) int {
 	return (y-p.Rect.Min.Y)*p.Stride + (x-p.Rect.Min.X)*3
 }
 
-// Set implements Image.
+// Set adds pixel to Image at given x, y.
 func (p *RGB) Set(x, y int, c color.Color) {
 	if !(image.Point{x, y}.In(p.Rect)) {
 		return
@@ -158,7 +195,7 @@ func (p *RGB64) PixOffset(x, y int) int {
 	return (y-p.Rect.Min.Y)*p.Stride + (x-p.Rect.Min.X)*3
 }
 
-// Set implements Image.
+// Set adds pixel to Image at given x, y.
 func (p *RGB64) Set(x, y int, c color.Color) {
 	if !(image.Point{x, y}.In(p.Rect)) {
 		return
@@ -244,7 +281,7 @@ func (p *XYZ) PixOffset(x, y int) int {
 	return (y-p.Rect.Min.Y)*p.Stride + (x-p.Rect.Min.X)*3
 }
 
-// Set implements Image.
+// Set adds pixel to Image at given x, y.
 func (p *XYZ) Set(x, y int, c color.Color) {
 	if !(image.Point{x, y}.In(p.Rect)) {
 		return
@@ -322,7 +359,7 @@ func (p *XYZ64) PixOffset(x, y int) int {
 	return (y-p.Rect.Min.Y)*p.Stride + (x-p.Rect.Min.X)*3
 }
 
-// Set implements Image.
+// Set adds pixel to Image at given x, y.
 func (p *XYZ64) Set(x, y int, c color.Color) {
 	if !(image.Point{x, y}.In(p.Rect)) {
 		return
