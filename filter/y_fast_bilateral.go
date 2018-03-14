@@ -1,7 +1,6 @@
 package filter
 
 import (
-	"fmt"
 	"image"
 	"image/color"
 	"math"
@@ -162,9 +161,9 @@ func (f *YFastBilateral) minmax() {
 	f.size[1] = int(float64(d.Dy()-1)/f.SigmaSpace) + 1 + 2*paddingS
 	f.size[2] = int((f.max-f.min)/f.SigmaRange) + 1 + 2*paddingR
 
-	fmt.Println("ssp:", f.SigmaSpace, " - sra:", f.SigmaRange)
-	fmt.Println("min:", f.min, "- max:", f.max)
-	fmt.Println("size:", mul(f.size...), f.size)
+	// fmt.Println("ssp:", f.SigmaSpace, " - sra:", f.SigmaRange)
+	// fmt.Println("min:", f.min, "- max:", f.max)
+	// fmt.Println("size:", mul(f.size...), f.size)
 }
 
 func (f *YFastBilateral) downsampling() {

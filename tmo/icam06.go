@@ -1,7 +1,6 @@
 package tmo
 
 import (
-	"fmt"
 	"image"
 	"image/color"
 	"math"
@@ -320,26 +319,15 @@ func (t *ICam06) normalize(m *image.RGBA64) {
 	minRGB := math.Min(perc.percentile(t.MinClipping), 0)
 	maxRGB := perc.percentile(t.MaxClipping)
 
-	fmt.Println("mm:", minRGB, maxRGB)
-
 	completed = util.ParallelR(t.HDRImage.Bounds(), func(x1, y1, x2, y2 int) {
 		for y := y1; y < y2; y++ {
 			for x := x1; x < x2; x++ {
 				r, g, b, _ := t.colorfullnessXsurround(x, y).HDRRGBA() // FIXME perf-1
 
-				// if x1 == 0 && y1 == 0 {
-				// 	fmt.Println("1:", r, g, b)
-				// }
-
 				// Clipping, second part
 				r = util.Clamp(0, 1, (r-minRGB)/(maxRGB-minRGB))
 				g = util.Clamp(0, 1, (g-minRGB)/(maxRGB-minRGB))
 				b = util.Clamp(0, 1, (b-minRGB)/(maxRGB-minRGB))
-
-				// if x1 == 0 && y1 == 0 {
-				// 	fmt.Println("2:", (r-minRGB)/(maxRGB-minRGB), (g-minRGB)/(maxRGB-minRGB), (b-minRGB)/(maxRGB-minRGB))
-				// 	fmt.Println("3:", r, g, b)
-				// }
 
 				// RGB normalization
 				m.SetRGBA64(x, y, color.RGBA64{

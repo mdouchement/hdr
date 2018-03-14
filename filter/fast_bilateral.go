@@ -184,9 +184,9 @@ func (f *FastBilateral) minmax() {
 		f.size[2+c] = int((f.max[c]-f.min[c])/f.SigmaRange) + 1 + 2*paddingR
 	}
 
-	fmt.Println("ssp:", f.SigmaSpace, " - sra:", f.SigmaRange)
-	fmt.Println("min:", f.min, "- max:", f.max)
-	fmt.Println("size:", mul(f.size...), f.size)
+	// fmt.Println("ssp:", f.SigmaSpace, " - sra:", f.SigmaRange)
+	// fmt.Println("min:", f.min, "- max:", f.max)
+	// fmt.Println("size:", mul(f.size...), f.size)
 }
 
 func (f *FastBilateral) downsampling() {
