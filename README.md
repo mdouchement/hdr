@@ -26,7 +26,6 @@ Read this [documentation](https://hal.archives-ouvertes.fr/hal-00724931/document
 
 - Linear
 - Logarithmic
-- Normalization (a part of iCAM06 TMO)
 - Drago '03    - Adaptive logarithmic mapping for displaying high contrast scenes
 - Reinhard '05 - Photographic tone reproduction for digital images
   - Playing with parameters could provide better rendering
@@ -89,7 +88,6 @@ func main() {
 
 		// t := tmo.NewLinear(hdrm)
 		// t := tmo.NewLogarithmic(hdrm)
-		// t := tmo.NewICam06Normalization(hdrm)
 		// t := tmo.NewDefaultDrago03(hdrm)
 		// t := tmo.NewDefaultCustomReinhard05(hdrm)
 		t := tmo.NewDefaultReinhard05(hdrm)
