@@ -2,7 +2,7 @@ package filter
 
 func clamp(min, max, v int) int {
 	if v < min {
-		v = 0
+		v = min
 	}
 	if v > max {
 		v = max
