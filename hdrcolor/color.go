@@ -18,6 +18,9 @@ type Color interface {
 	// HDRXYZA returns the x, y, z and alpha values
 	// for the HDR color.
 	HDRXYZA() (x, y, z, a float64)
+
+	// HDRPixel returns the raw channels' values of a pixel.
+	HDRPixel() (p1, p2, p3, pa float64)
 }
 
 // RGB represents a HDR color in RGB color-space.
@@ -54,6 +57,11 @@ func (c RGB) HDRXYZA() (x, y, z, a float64) {
 	a = 0xFFFF
 
 	return
+}
+
+// HDRPixel aliases the HDRRGBA func.
+func (c RGB) HDRPixel() (r, g, b, a float64) {
+	return c.HDRRGBA()
 }
 
 // XYZ represents a HDR color in XYZ color-space.
@@ -94,10 +102,50 @@ func (c XYZ) HDRXYZA() (x, y, z, a float64) {
 	return
 }
 
+// HDRPixel aliases the HDRXYZA func.
+func (c XYZ) HDRPixel() (x, y, z, a float64) {
+	return c.HDRXYZA()
+}
+
+// RAW represents a HDR color in no specific color-space.
+// Take care when you use this color!
+type RAW struct {
+	P1, P2, P3 float64
+}
+
+// RGBA returns the alpha-premultiplied red, green, blue and alpha values
+// for the color. Each value ranges within [0, 0xffff], but is represented
+// by a uint32 so that multiplying by a blend factor up to 0xffff will not
+// overflow.
+func (c RAW) RGBA() (r, g, b, a uint32) {
+	rr, gg, bb, aa := c.HDRRGBA()
+	r = uint32(rr * 0xFFFF)
+	g = uint32(gg * 0xFFFF)
+	b = uint32(bb * 0xFFFF)
+	a = uint32(aa * 0xFFFF)
+
+	return
+}
+
+// HDRRGBA aliases HDRPixel.
+func (c RAW) HDRRGBA() (r, g, b, a float64) {
+	return c.HDRPixel()
+}
+
+// HDRXYZA aliases HDRPixel.
+func (c RAW) HDRXYZA() (x, y, z, a float64) {
+	return c.HDRPixel()
+}
+
+// HDRPixel returns the raw channels' values of a pixel.
+func (c RAW) HDRPixel() (p1, p2, p3, pa float64) {
+	return c.P1, c.P2, c.P3, 0xFFFF
+}
+
 // Models for the standard color types.
 var (
-	RGBModel color.Model = color.ModelFunc(rgbModel)
-	XYZModel color.Model = color.ModelFunc(xyzModel)
+	RGBModel = color.ModelFunc(rgbModel)
+	XYZModel = color.ModelFunc(xyzModel)
 )
 
 func rgbModel(c color.Color) color.Color {
