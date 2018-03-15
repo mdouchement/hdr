@@ -129,10 +129,16 @@ func (t *ICam06) Perform() image.Image {
 
 func (t *ICam06) chromaticAdaptation(x, y int) (float64, float64, float64) {
 	l1, m1, s1, _ := hdr.NewLMSCAT02w(t.baseLayer).HDRAt(x, y).HDRPixel()
-	l2, m2, s2, _ := hdr.NewLMSCAT02w(t.white).HDRAt(x, y).HDRPixel()
 
-	la := 0.2 * m2
-	D := surroundFactor * (1.0 - (math.Exp(-(la+42)/92) / 3.6)) // FIXME la-42 PDF
+	// FIXME StackBlur seems to have some side effects here (halo effect and red-ish image)
+	// l2, m2, s2, _ := hdr.NewLMSCAT02w(t.white).HDRAt(x, y).HDRPixel()
+	// la := 0.2 * m2
+
+	// Use generic White adaptation values
+	l2, m2, s2 := 1.0, 1.0, 1.0
+	la := 1.0
+
+	D := surroundFactor * (1.0 - (math.Exp(-(la+42)/92) / 3.6))
 
 	return hdrcolor.LmsMcat02ToXyz(
 		l1*(cat02D65[0]*D/l2+(1.0-D)),
@@ -158,14 +164,22 @@ func (t *ICam06) toneCompression() hdr.Image {
 			for x := x1; x < x2; x++ {
 				_, Yw, _, _ := t.white.HDRAt(x, y).HDRXYZA() // Yw is the luminance of the local adapted white image
 
+				//
+				// Cone response
+				//
+
 				La := 0.2 * Yw                                                                                // Luminance Adaptation
 				k := 1.0 / (5*La + 1.0)                                                                       // Equation 14
 				fl := 0.2*math.Pow(k, 4)*(5*La) + 0.1*math.Pow(1.0-math.Pow(k, 4), 2)*math.Pow(5*La, 1.0/3.0) // Equation 13
 
+				//
+				// compression
+				//
+
 				Xca, Yca, Zca := t.chromaticAdaptation(x, y)
 				l, m, s := hdrcolor.XyzToLmsMhpe(Xca, Yca, Zca) // Equation 9
 
-				S := Yca // Luminance of each pixel in the chromatic adapted image
+				S := math.Abs(Yw) // Luminance of each pixel in the chromatic adapted image - FIXME Should be Yca according to the paper
 
 				pow := math.Pow(fl*l/Yw, t.Contrast)
 				l = ((400 * pow) / (27.13 + pow)) + 0.1 // Equation 10
@@ -176,7 +190,9 @@ func (t *ICam06) toneCompression() hdr.Image {
 				pow = math.Pow(fl*s/Yw, t.Contrast)
 				s = ((400 * pow) / (27.13 + pow)) + 0.1 // Equation 12
 
-				// ----------------
+				//
+				// Make a netural As Rod response
+				//
 
 				// Las := 2.26 * La                    // Equation 17, scotopic luminance factor
 				// Let say: Lls = 5*Las/2.26
@@ -186,10 +202,15 @@ func (t *ICam06) toneCompression() hdr.Image {
 				FLS := 3800*(j*j)*Lls + 0.2*math.Pow(1-(j*j), 4)*math.Pow(Lls, 1.0/6.0) // Equation 16, scotopic luminance level adaptation factor
 
 				St := S / Sw
+				// BS is the rod pigment bleach or satruration factor
 				Bs := 0.5/(1+0.3*math.Pow(Lls*St, 0.3)) + 0.5/(1+5*Lls) // Equation 19
+				// Noise term in Rod response is 1 / 3 of that in Cone response because Rods are more sensitive
 				pow = math.Pow(FLS*St, t.Contrast)
 				As := 3.05*Bs*(400*pow/(27.13+pow)) + 0.3 // Equation 15, The rod response after adaptation
 
+				//
+				// Combine Cone and Rod response
+				//
 				Xtc, Ytc, Ztc := hdrcolor.LmsMhpeToXyz(l+As, m+As, s+As) // Equation 20 + HPE->XYZ
 
 				toneCompressed.Set(x, y, hdrcolor.XYZ{X: Xtc, Y: Ytc, Z: Ztc})
@@ -260,31 +281,6 @@ func (t *ICam06) colorfullnessXsurround(x, y int) hdrcolor.Color {
 }
 
 func (t *ICam06) normalize(m *image.RGBA64) {
-	// 	maxCh := make(chan float64)
-	// 	completed := util.ParallelR(t.HDRImage.Bounds(), func(x1, y1, x2, y2 int) {
-	// 		max := math.Inf(-1)
-	//
-	// 		for y := y1; y < y2; y++ {
-	// 			for x := x1; x < x2; x++ {
-	// 				_, lum, _, _ := t.colorfullnessXsurround(x, y).HDRXYZA() // FIXME perf-1
-	//
-	// 				max = math.Max(max, lum)
-	// 			}
-	// 		}
-	//
-	// 		maxCh <- max
-	// 	})
-	//
-	// 	for {
-	// 		select {
-	// 		case <-completed:
-	// 			goto NEXT
-	// 		case max := <-maxCh:
-	// 			t.maxLum = math.Max(t.maxLum, max)
-	// 		}
-	// 	}
-	// NEXT:
-
 	// Percentile
 	size := t.HDRImage.Size()
 	perc := make(percentiles, size*3) // FIXME high memory consumption => only 2 values are needed minRGB && maxRGB
@@ -292,16 +288,6 @@ func (t *ICam06) normalize(m *image.RGBA64) {
 	completed := util.ParallelR(t.HDRImage.Bounds(), func(x1, y1, x2, y2 int) {
 		for y := y1; y < y2; y++ {
 			for x := x1; x < x2; x++ {
-				// xx, yy, zz, _ := t.colorfullnessXsurround(x, y).HDRXYZA() // FIXME perf-1
-				//
-				// // XYZ normalization
-				// xx /= t.maxLum
-				// yy /= t.maxLum
-				// zz /= t.maxLum
-				//
-				// // RGB-space conversion
-				// r, g, b := colorful.XyzToLinearRgb(xx, yy, zz)
-
 				r, g, b, _ := t.colorfullnessXsurround(x, y).HDRRGBA() // FIXME perf-1
 
 				// Clipping, first part
