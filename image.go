@@ -24,6 +24,23 @@ type ImageSet interface {
 	Set(x, y int, c color.Color)
 }
 
+// EmptyAs returns a new empty image with the same underlying type and params as src.
+func EmptyAs(src Image) Image {
+	switch m := src.(type) {
+	case *RGB:
+		return NewRGB(m.Bounds())
+	case *RGB64:
+		return NewRGB64(m.Bounds())
+	case *XYZ:
+		return NewXYZ(m.Bounds())
+	case *XYZ64:
+		return NewXYZ64(m.Bounds())
+	default:
+		// fallback
+		return NewRGB64(m.Bounds())
+	}
+}
+
 // Copy copies the src into a new image.
 func Copy(src Image) Image {
 	switch m := src.(type) {

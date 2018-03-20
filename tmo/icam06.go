@@ -78,8 +78,7 @@ func (t *ICam06) Perform() image.Image {
 	//
 	//
 	// Chromatic adaptation (White adaptation) - Section 2.3
-	b := filter.NewStackBlur(t.HDRImage, t.minDim()/2)
-	t.white = b.Perform()
+	t.white = filter.StackBlur(t.HDRImage, t.minDim()/2)
 	//
 	//
 	// Non-linear tone compression - Section 2.4
