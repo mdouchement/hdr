@@ -76,9 +76,9 @@ func (t *ICam06) Perform() image.Image {
 	t.normalized = filter.NewApply1(t.HDRImage, func(c1 hdrcolor.Color, _ hdrcolor.Color) hdrcolor.Color {
 		x, y, z, _ := c1.HDRXYZA()
 		return hdrcolor.XYZ{
-			X: util.Clamp(0.00000001, maxLum, (x/t.maxLum)*maxLum),
-			Y: util.Clamp(0.00000001, maxLum, (y/t.maxLum)*maxLum),
-			Z: util.Clamp(0.00000001, maxLum, (z/t.maxLum)*maxLum),
+			X: math.Max(0.00000001, maxLum*x/t.maxLum),
+			Y: math.Max(0.00000001, maxLum*y/t.maxLum),
+			Z: math.Max(0.00000001, maxLum*z/t.maxLum),
 		}
 	})
 	//
@@ -168,16 +168,13 @@ func (t *ICam06) luminance() {
 
 func (t *ICam06) chromaticAdaptation(x, y int) (float64, float64, float64) {
 	l1, m1, s1, _ := hdr.NewLMSCAT02w(t.baseLayer).HDRAt(x, y).HDRPixel()
-
-	// FIXME StackBlur seems to have some side effects here (halo effect and red-ish image)
 	l2, m2, s2, _ := hdr.NewLMSCAT02w(t.white).HDRAt(x, y).HDRPixel()
-	la := 0.2 * m2
 
-	// Use generic White adaptation values
-	// l2, m2, s2 := 1.0, 1.0, 1.0
-	// la := 1.0
+	// FIXME red-ish image with computed La
+	// la := 0.2 * m2
+	la := 1.0
 
-	D := surroundFactor * (1.0 - (math.Exp(-(la+42)/92) / 3.6))
+	D := surroundFactor * (1.0 - (math.Exp(-(la-42)/92) / 3.6))
 
 	return hdrcolor.LmsMcat02ToXyz(
 		l1*(cat02D65[0]*D/l2+(1.0-D)),
@@ -218,7 +215,7 @@ func (t *ICam06) toneCompression() hdr.Image {
 				Xca, Yca, Zca := t.chromaticAdaptation(x, y)
 				l, m, s := hdrcolor.XyzToLmsMhpe(Xca, Yca, Zca) // Equation 9
 
-				S := math.Abs(Yca) // Luminance of each pixel in the chromatic adapted image - FIXME Should be Yca according to the paper
+				S := math.Abs(Yca) // Luminance of each pixel in the chromatic adapted image
 
 				pow := math.Pow(fl*l/Yw, t.Contrast)
 				l = ((400 * pow) / (27.13 + pow)) + 0.1 // Equation 10
@@ -342,7 +339,7 @@ NEXT:
 	normLum := func(x, y int) (r, g, b float64) {
 		X, Y, Z, _ := t.colorfullnessXsurround(x, y).HDRXYZA() // FIXME perf-1
 
-		// XYZ normalization
+		// XYZ normalization FIXME looks like useless
 		X /= norMaxLum
 		Y /= norMaxLum
 		Z /= norMaxLum
