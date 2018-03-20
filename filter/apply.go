@@ -16,8 +16,33 @@ type Apply struct {
 	apply     func(c1, c2 hdrcolor.Color) hdrcolor.Color
 }
 
-// NewApply instanciates a new Apply filter.
-func NewApply(m1, m2 hdr.Image, apply func(c1, c2 hdrcolor.Color) hdrcolor.Color) *Apply {
+// NewApply1 instanciates a new Apply filter.
+func NewApply1(m1 hdr.Image, apply func(c1, c2 hdrcolor.Color) hdrcolor.Color) *Apply {
+	f := &Apply{
+		HDRImage1: m1,
+		apply:     apply,
+	}
+
+	switch m1.ColorModel() {
+	case hdrcolor.XYZModel:
+		f.hdrat = func(x, y int) hdrcolor.Color {
+			c := f.apply(f.HDRImage1.HDRAt(x, y), nil)
+			return hdrcolor.XYZModel.Convert(c.(color.Color)).(hdrcolor.Color)
+		}
+	case hdrcolor.RGBModel:
+		f.hdrat = func(x, y int) hdrcolor.Color {
+			c := f.apply(f.HDRImage1.HDRAt(x, y), nil)
+			return hdrcolor.RGBModel.Convert(c.(color.Color)).(hdrcolor.Color)
+		}
+	default:
+		panic("Color Model not supported")
+	}
+
+	return f
+}
+
+// NewApply2 instanciates a new Apply filter.
+func NewApply2(m1, m2 hdr.Image, apply func(c1, c2 hdrcolor.Color) hdrcolor.Color) *Apply {
 	f := &Apply{
 		HDRImage1: m1,
 		HDRImage2: m2,
