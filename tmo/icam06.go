@@ -91,7 +91,7 @@ func (t *ICam06) Perform() image.Image {
 	//
 	//
 	// Chromatic adaptation (White adaptation) - Section 2.3
-	t.white = filter.FastGaussian(t.normalized, (t.maxDim() / 2))
+	t.white = filter.FastGaussian(t.normalized, (t.minDim() / 2))
 	//
 	//
 	// Non-linear tone compression - Section 2.4
