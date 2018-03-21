@@ -52,10 +52,11 @@ type ICam06 struct {
 
 // NewDefaultICam06 instanciates a new ICam06 TMO with default parameters.
 func NewDefaultICam06(m hdr.Image) *ICam06 {
-	return NewICam06(m, 0.75, 0.01, 0.99)
+	return NewICam06(m, 0.7, 0.01, 0.99)
 }
 
 // NewICam06 instanciates a new ICam06 TMO.
+// Clipping: simulate incomplete light adaptation and the glare in visual system.
 func NewICam06(m hdr.Image, contrast, minClipping, maxClipping float64) *ICam06 {
 	return &ICam06{
 		HDRImage:    m,
@@ -76,9 +77,9 @@ func (t *ICam06) Perform() image.Image {
 	t.normalized = filter.NewApply1(t.HDRImage, func(c1 hdrcolor.Color, _ hdrcolor.Color) hdrcolor.Color {
 		x, y, z, _ := c1.HDRXYZA()
 		return hdrcolor.XYZ{
-			X: math.Max(0.00000001, maxLum*x/t.maxLum),
-			Y: math.Max(0.00000001, maxLum*y/t.maxLum),
-			Z: math.Max(0.00000001, maxLum*z/t.maxLum),
+			X: math.Max(0.00000001, maxLum*(x/t.maxLum)),
+			Y: math.Max(0.00000001, maxLum*(y/t.maxLum)),
+			Z: math.Max(0.00000001, maxLum*(z/t.maxLum)),
 		}
 	})
 	//
@@ -168,13 +169,14 @@ func (t *ICam06) luminance() {
 
 func (t *ICam06) chromaticAdaptation(x, y int) (float64, float64, float64) {
 	l1, m1, s1, _ := hdr.NewLMSCAT02w(t.baseLayer).HDRAt(x, y).HDRPixel()
-	l2, m2, s2, _ := hdr.NewLMSCAT02w(t.white).HDRAt(x, y).HDRPixel()
 
-	// FIXME red-ish image with computed La
-	// la := 0.2 * m2
-	la := 1.0
+	Xw, Yw, Zw, _ := t.white.HDRAt(x, y).HDRXYZA()
+	l2, m2, s2 := hdrcolor.XyzToLmsMcat02(Xw, Yw, Zw)
 
-	D := surroundFactor * (1.0 - (math.Exp(-(la-42)/92) / 3.6))
+	// Yw should not be divided by maxLum but it removes the red-ish effect (is this a side effect of 20,000cd/m2 applied at the beginning?)
+	la := 0.2 * (Yw / maxLum)
+	// default setting for 30% incomplete chromatic adaptation: a = 0.3
+	D := 0.3 * surroundFactor * (1.0 - (math.Exp(-(la-42)/92) / 3.6))
 
 	return hdrcolor.LmsMcat02ToXyz(
 		l1*(cat02D65[0]*D/l2+(1.0-D)),
@@ -215,8 +217,6 @@ func (t *ICam06) toneCompression() hdr.Image {
 				Xca, Yca, Zca := t.chromaticAdaptation(x, y)
 				l, m, s := hdrcolor.XyzToLmsMhpe(Xca, Yca, Zca) // Equation 9
 
-				S := math.Abs(Yca) // Luminance of each pixel in the chromatic adapted image
-
 				pow := math.Pow(fl*l/Yw, t.Contrast)
 				l = ((400 * pow) / (27.13 + pow)) + 0.1 // Equation 10
 
@@ -237,6 +237,7 @@ func (t *ICam06) toneCompression() hdr.Image {
 				j := 0.00001 / (Lls + 0.00001)                                          // Equation 18
 				FLS := 3800*(j*j)*Lls + 0.2*math.Pow(1-(j*j), 4)*math.Pow(Lls, 1.0/6.0) // Equation 16, scotopic luminance level adaptation factor
 
+				S := math.Abs(Yca) // Luminance of each pixel in the chromatic adapted image
 				St := S / Sw
 				// BS is the rod pigment bleach or satruration factor
 				Bs := 0.5/(1+0.3*math.Pow(Lls*St, 0.3)) + 0.5/(1+5*Lls) // Equation 19
@@ -298,7 +299,7 @@ func (t *ICam06) colorfullnessXsurround(x, y int) hdrcolor.Color {
 
 	// Hunt effect - Equation 25 & 26
 	Chroma := math.Sqrt(P*P + T*T)
-	scale := math.Pow(fl+1, 0.2) * (1.29*Chroma*Chroma - 0.27*Chroma + 0.42) / (Chroma*Chroma - 0.31*Chroma + 0.42)
+	scale := math.Pow(fl+1, 0.15) * (1.29*Chroma*Chroma - 0.27*Chroma + 0.42) / (Chroma*Chroma - 0.31*Chroma + 0.42)
 	P *= scale
 	T *= scale
 
