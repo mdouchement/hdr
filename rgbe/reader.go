@@ -51,11 +51,11 @@ func (d *decoder) parseHeader() error {
 		case "":
 			// End of header
 			goto NEXT
-		case "#?RADIANCE":
+		case header0:
 			fallthrough
-		case "#?RGBE":
+		case header1:
 			fallthrough
-		case "#?AUTOPANO":
+		case header2:
 			// Format specifier found (magic number)
 			magic = true
 		}
