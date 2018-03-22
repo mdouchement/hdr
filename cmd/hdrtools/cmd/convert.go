@@ -8,6 +8,7 @@ import (
 
 	"github.com/mdouchement/hdr"
 	"github.com/mdouchement/hdr/crad"
+	"github.com/mdouchement/hdr/pfm"
 	"github.com/mdouchement/hdr/rgbe"
 	"github.com/pkg/errors"
 	"github.com/spf13/cobra"
@@ -26,6 +27,7 @@ var (
 	torgbe bool
 	tohdr  bool
 	tocrad bool
+	topfm  bool
 )
 
 func init() {
@@ -33,6 +35,7 @@ func init() {
 	ConvertCommand.Flags().BoolVarP(&torgbe, "to-rgbe", "", false, "Converts to Radiance RGBE")
 	ConvertCommand.Flags().BoolVarP(&tohdr, "to-hdr", "", false, "Converts to Radiance RGBE/XYZE")
 	ConvertCommand.Flags().BoolVarP(&tocrad, "to-crad", "", false, "Converts to CRAD")
+	ConvertCommand.Flags().BoolVarP(&topfm, "to-pfm", "", false, "Converts to PFM")
 }
 
 func convertAction(c *cobra.Command, args []string) error {
@@ -69,6 +72,8 @@ func convertAction(c *cobra.Command, args []string) error {
 		rgbe.Encode(fo, hdrm)
 	case tocrad:
 		crad.Encode(fo, hdrm)
+	case topfm:
+		pfm.Encode(fo, hdrm)
 	default:
 		return errors.New("convert: No converion flage provided")
 	}
