@@ -107,7 +107,7 @@ func boxBlurV(dst hdr.ImageSet, src hdr.Image, radius int) {
 			vg += g
 			vb += b
 		}
-		// _, lp, dp := 0, so, do
+
 		for y := 0; y < r1; y++ {
 			r, g, b, _ := src.HDRAt(x, y+radius).HDRRGBA()
 			vr += r - fvr
