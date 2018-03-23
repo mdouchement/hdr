@@ -6,6 +6,7 @@ import (
 	"math"
 	"sort"
 
+	colorful "github.com/lucasb-eyer/go-colorful"
 	"github.com/mdouchement/hdr"
 	"github.com/mdouchement/hdr/filter"
 	"github.com/mdouchement/hdr/hdrcolor"
@@ -13,13 +14,15 @@ import (
 )
 
 const (
-	maxLum         = 20000
-	surroundFactor = 1 // F=1 in an average surround
+	maxLum         = 20000 // maximum luminance(cd/m2)
+	surroundFactor = 1     // F=1 in an average surround
 )
 
 var (
-	xyzD65   = []float64{96.047, 100, 108.883} // D65 white point in XYZ
-	cat02D65 []float64                         // D65 white point in CAT02
+	// ICamNormalizeLDRLuminance normalizes the LDR luminance (10% slower when activated).
+	ICamNormalizeLDRLuminance = false
+	xyzD65                    = []float64{96.047, 100, 108.883} // D65 white point in XYZ
+	cat02D65                  []float64                         // D65 white point in CAT02
 )
 
 func init() {
@@ -42,18 +45,20 @@ type ICam06 struct {
 	MaxClipping    float64
 	width          int
 	height         int
+	maxLum         float64
+	normalized     hdr.Image
 	baseLayer      hdr.Image
 	white          hdr.Image
 	detailCombined hdr.Image
-	maxLum         float64
 }
 
 // NewDefaultICam06 instanciates a new ICam06 TMO with default parameters.
 func NewDefaultICam06(m hdr.Image) *ICam06 {
-	return NewICam06(m, 0.75, 0.01, 0.99)
+	return NewICam06(m, 0.7, 0.01, 0.99)
 }
 
 // NewICam06 instanciates a new ICam06 TMO.
+// Clipping: simulate incomplete light adaptation and the glare in visual system.
 func NewICam06(m hdr.Image, contrast, minClipping, maxClipping float64) *ICam06 {
 	return &ICam06{
 		HDRImage:    m,
@@ -69,8 +74,19 @@ func NewICam06(m hdr.Image, contrast, minClipping, maxClipping float64) *ICam06 
 func (t *ICam06) Perform() image.Image {
 	// Note: Section & Equation numbers come from the PDF paper.
 	//
+	// Input normalization
+	t.luminance()
+	t.normalized = filter.NewApply1(t.HDRImage, func(c1 hdrcolor.Color, _ hdrcolor.Color) hdrcolor.Color {
+		x, y, z, _ := c1.HDRXYZA()
+		return hdrcolor.XYZ{
+			X: math.Max(0.00000001, maxLum*(x/t.maxLum)),
+			Y: math.Max(0.00000001, maxLum*(y/t.maxLum)),
+			Z: math.Max(0.00000001, maxLum*(z/t.maxLum)),
+		}
+	})
+	//
 	// Decomposing the image into base layer  - Section 2.2
-	log := filter.NewLog10(t.HDRImage)
+	log := filter.NewLog10(t.normalized)
 	bilateral := filter.NewYFastBilateralAuto(log) // Better blur with log10 values
 	bilateral.SigmaSpace = float64(t.minDim()) * 0.02
 	bilateral.Perform()
@@ -78,7 +94,7 @@ func (t *ICam06) Perform() image.Image {
 	//
 	//
 	// Chromatic adaptation (White adaptation) - Section 2.3
-	t.white = filter.StackBlur(t.HDRImage, t.minDim()/2)
+	t.white = filter.FastGaussian(t.normalized, (t.minDim() / 2))
 	//
 	//
 	// Non-linear tone compression - Section 2.4
@@ -86,7 +102,7 @@ func (t *ICam06) Perform() image.Image {
 	//
 	//
 	// Decomposing the image into detail layer - Section 2.2 & 2.6
-	detailLayer := filter.NewApply(t.HDRImage, t.baseLayer, func(c1, c2 hdrcolor.Color) hdrcolor.Color {
+	detailLayer := filter.NewApply2(t.normalized, t.baseLayer, func(c1, c2 hdrcolor.Color) hdrcolor.Color {
 		x1, y1, z1, _ := c1.HDRXYZA()
 		x2, y2, z2, _ := c2.HDRXYZA()
 
@@ -109,7 +125,7 @@ func (t *ICam06) Perform() image.Image {
 	//
 	//
 	// Image attribute adjustments - Section 2.6
-	t.detailCombined = filter.NewApply(toneCompressed, detailLayer, func(c1, c2 hdrcolor.Color) hdrcolor.Color {
+	t.detailCombined = filter.NewApply2(toneCompressed, detailLayer, func(c1, c2 hdrcolor.Color) hdrcolor.Color {
 		x1, y1, z1, _ := c1.HDRXYZA()
 		x2, y2, z2, _ := c2.HDRXYZA()
 
@@ -126,18 +142,43 @@ func (t *ICam06) Perform() image.Image {
 	return m
 }
 
+func (t *ICam06) luminance() {
+	maxCh := make(chan float64)
+
+	completed := util.ParallelR(t.HDRImage.Bounds(), func(x1, y1, x2, y2 int) {
+		var max float64
+
+		for y := y1; y < y2; y++ {
+			for x := x1; x < x2; x++ {
+				_, lum, _, _ := t.HDRImage.HDRAt(x, y).HDRXYZA()
+
+				max = math.Max(t.maxLum, lum)
+			}
+		}
+
+		maxCh <- max
+	})
+
+	for {
+		select {
+		case <-completed:
+			return
+		case max := <-maxCh:
+			t.maxLum = math.Max(t.maxLum, max)
+		}
+	}
+}
+
 func (t *ICam06) chromaticAdaptation(x, y int) (float64, float64, float64) {
 	l1, m1, s1, _ := hdr.NewLMSCAT02w(t.baseLayer).HDRAt(x, y).HDRPixel()
 
-	// FIXME StackBlur seems to have some side effects here (halo effect and red-ish image)
-	// l2, m2, s2, _ := hdr.NewLMSCAT02w(t.white).HDRAt(x, y).HDRPixel()
-	// la := 0.2 * m2
+	Xw, Yw, Zw, _ := t.white.HDRAt(x, y).HDRXYZA()
+	l2, m2, s2 := hdrcolor.XyzToLmsMcat02(Xw, Yw, Zw)
 
-	// Use generic White adaptation values
-	l2, m2, s2 := 1.0, 1.0, 1.0
-	la := 1.0
-
-	D := surroundFactor * (1.0 - (math.Exp(-(la+42)/92) / 3.6))
+	// Yw should not be divided by maxLum but it removes the red-ish effect (is this a side effect of 20,000cd/m2 applied at the beginning?)
+	la := 0.2 * (Yw / maxLum)
+	// default setting for 30% incomplete chromatic adaptation: a = 0.3
+	D := 0.3 * surroundFactor * (1.0 - (math.Exp(-(la-42)/92) / 3.6))
 
 	return hdrcolor.LmsMcat02ToXyz(
 		l1*(cat02D65[0]*D/l2+(1.0-D)),
@@ -178,8 +219,6 @@ func (t *ICam06) toneCompression() hdr.Image {
 				Xca, Yca, Zca := t.chromaticAdaptation(x, y)
 				l, m, s := hdrcolor.XyzToLmsMhpe(Xca, Yca, Zca) // Equation 9
 
-				S := math.Abs(Yw) // Luminance of each pixel in the chromatic adapted image - FIXME Should be Yca according to the paper
-
 				pow := math.Pow(fl*l/Yw, t.Contrast)
 				l = ((400 * pow) / (27.13 + pow)) + 0.1 // Equation 10
 
@@ -190,7 +229,7 @@ func (t *ICam06) toneCompression() hdr.Image {
 				s = ((400 * pow) / (27.13 + pow)) + 0.1 // Equation 12
 
 				//
-				// Make a netural As Rod response
+				// Make a neutral As Rod response
 				//
 
 				// Las := 2.26 * La                    // Equation 17, scotopic luminance factor
@@ -200,6 +239,7 @@ func (t *ICam06) toneCompression() hdr.Image {
 				j := 0.00001 / (Lls + 0.00001)                                          // Equation 18
 				FLS := 3800*(j*j)*Lls + 0.2*math.Pow(1-(j*j), 4)*math.Pow(Lls, 1.0/6.0) // Equation 16, scotopic luminance level adaptation factor
 
+				S := math.Abs(Yca) // Luminance of each pixel in the chromatic adapted image
 				St := S / Sw
 				// BS is the rod pigment bleach or satruration factor
 				Bs := 0.5/(1+0.3*math.Pow(Lls*St, 0.3)) + 0.5/(1+5*Lls) // Equation 19
@@ -230,10 +270,6 @@ func (t *ICam06) iptColor(x, y int) (float64, float64, float64) {
 
 	// Apply gamma - Equation 22
 	gamma := func(v float64) float64 {
-		// if v >= 0 {
-		// 	return math.Pow(v, 0.43)
-		// }
-		// return -math.Pow(-v, 0.43)
 		return math.Pow(math.Abs(v), 0.43)
 	}
 
@@ -246,10 +282,6 @@ func (t *ICam06) reverseIptColor(I, P, T float64) hdrcolor.Color {
 
 	// reverse gamma
 	rGamma := func(v float64) float64 {
-		// if v >= 0 {
-		// 	return math.Pow(v, 1/0.43)
-		// }
-		// return -math.Pow(-v, 1/0.43)
 		return math.Pow(math.Abs(v), 1/0.43)
 	}
 
@@ -269,7 +301,7 @@ func (t *ICam06) colorfullnessXsurround(x, y int) hdrcolor.Color {
 
 	// Hunt effect - Equation 25 & 26
 	Chroma := math.Sqrt(P*P + T*T)
-	scale := math.Pow(fl+1, 0.2) * (1.29*Chroma*Chroma - 0.27*Chroma + 0.42) / (Chroma*Chroma - 0.31*Chroma + 0.42)
+	scale := math.Pow(fl+1, 0.15) * (1.29*Chroma*Chroma - 0.27*Chroma + 0.42) / (Chroma*Chroma - 0.31*Chroma + 0.42)
 	P *= scale
 	T *= scale
 
@@ -280,6 +312,8 @@ func (t *ICam06) colorfullnessXsurround(x, y int) hdrcolor.Color {
 }
 
 func (t *ICam06) normalize(m *image.RGBA64) {
+	normLum := t.normalizeLDRLuminanceFn()
+
 	// Percentile
 	size := t.HDRImage.Size()
 	perc := make(percentiles, size*3) // FIXME high memory consumption => only 2 values are needed minRGB && maxRGB
@@ -287,7 +321,7 @@ func (t *ICam06) normalize(m *image.RGBA64) {
 	completed := util.ParallelR(t.HDRImage.Bounds(), func(x1, y1, x2, y2 int) {
 		for y := y1; y < y2; y++ {
 			for x := x1; x < x2; x++ {
-				r, g, b, _ := t.colorfullnessXsurround(x, y).HDRRGBA() // FIXME perf-1
+				r, g, b := normLum(x, y)
 
 				// Clipping, first part
 				i := x * y
@@ -307,7 +341,7 @@ func (t *ICam06) normalize(m *image.RGBA64) {
 	completed = util.ParallelR(t.HDRImage.Bounds(), func(x1, y1, x2, y2 int) {
 		for y := y1; y < y2; y++ {
 			for x := x1; x < x2; x++ {
-				r, g, b, _ := t.colorfullnessXsurround(x, y).HDRRGBA() // FIXME perf-1
+				r, g, b := normLum(x, y)
 
 				// Clipping, second part
 				r = util.Clamp(0, 1, (r-minRGB)/(maxRGB-minRGB))
@@ -335,6 +369,53 @@ func (t *ICam06) normalizeC(channel float64) uint16 {
 	return uint16(RangeMax * c)
 }
 
+func (t *ICam06) normalizeLDRLuminanceFn() func(x, y int) (r, g, b float64) {
+	if ICamNormalizeLDRLuminance {
+		norMaxLum := math.Inf(-1)
+		maxCh := make(chan float64)
+
+		completed := util.ParallelR(t.HDRImage.Bounds(), func(x1, y1, x2, y2 int) {
+			var max float64
+
+			for y := y1; y < y2; y++ {
+				for x := x1; x < x2; x++ {
+					_, lum, _, _ := t.colorfullnessXsurround(x, y).HDRXYZA() // FIXME perf-1
+
+					max = math.Max(t.maxLum, lum)
+				}
+			}
+
+			maxCh <- max
+		})
+
+		for {
+			select {
+			case <-completed:
+				goto NEXT
+			case max := <-maxCh:
+				norMaxLum = math.Max(norMaxLum, max)
+			}
+		}
+	NEXT:
+
+		return func(x, y int) (r, g, b float64) {
+			X, Y, Z, _ := t.colorfullnessXsurround(x, y).HDRXYZA() // FIXME perf-1
+
+			// XYZ normalization FIXME looks like useless
+			X /= norMaxLum
+			Y /= norMaxLum
+			Z /= norMaxLum
+
+			// RGB-space conversion
+			return colorful.XyzToLinearRgb(X, Y, Z)
+		}
+	}
+	return func(x, y int) (r, g, b float64) {
+		r, g, b, _ = t.colorfullnessXsurround(x, y).HDRRGBA() // FIXME perf-1
+		return
+	}
+}
+
 func (t *ICam06) clampToZero(x float64) float64 {
 	if math.IsNaN(x) || math.IsInf(x, -1) || math.IsInf(x, 1) {
 		return 0
@@ -344,6 +425,13 @@ func (t *ICam06) clampToZero(x float64) float64 {
 
 func (t *ICam06) minDim() int {
 	if t.width < t.height {
+		return t.width
+	}
+	return t.height
+}
+
+func (t *ICam06) maxDim() int {
+	if t.width > t.height {
 		return t.width
 	}
 	return t.height
