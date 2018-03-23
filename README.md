@@ -113,6 +113,10 @@ func check(err error) {
 ```
 
 
+## HDR Tools
+
+[https://github.com/mdouchement/hdrtool](https://github.com/mdouchement/hdrtool)
+
 ## License
 
 **MIT**
