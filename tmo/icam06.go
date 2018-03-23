@@ -19,8 +19,10 @@ const (
 )
 
 var (
-	xyzD65   = []float64{96.047, 100, 108.883} // D65 white point in XYZ
-	cat02D65 []float64                         // D65 white point in CAT02
+	// ICamNormalizeLDRLuminance normalizes the LDR luminance (10% slower when activated).
+	ICamNormalizeLDRLuminance = false
+	xyzD65                    = []float64{96.047, 100, 108.883} // D65 white point in XYZ
+	cat02D65                  []float64                         // D65 white point in CAT02
 )
 
 func init() {
@@ -310,50 +312,13 @@ func (t *ICam06) colorfullnessXsurround(x, y int) hdrcolor.Color {
 }
 
 func (t *ICam06) normalize(m *image.RGBA64) {
-	norMaxLum := math.Inf(-1)
-	maxCh := make(chan float64)
-
-	completed := util.ParallelR(t.HDRImage.Bounds(), func(x1, y1, x2, y2 int) {
-		var max float64
-
-		for y := y1; y < y2; y++ {
-			for x := x1; x < x2; x++ {
-				_, lum, _, _ := t.colorfullnessXsurround(x, y).HDRXYZA() // FIXME perf-1
-
-				max = math.Max(t.maxLum, lum)
-			}
-		}
-
-		maxCh <- max
-	})
-
-	for {
-		select {
-		case <-completed:
-			goto NEXT
-		case max := <-maxCh:
-			norMaxLum = math.Max(norMaxLum, max)
-		}
-	}
-NEXT:
-
-	normLum := func(x, y int) (r, g, b float64) {
-		X, Y, Z, _ := t.colorfullnessXsurround(x, y).HDRXYZA() // FIXME perf-1
-
-		// XYZ normalization FIXME looks like useless
-		X /= norMaxLum
-		Y /= norMaxLum
-		Z /= norMaxLum
-
-		// RGB-space conversion
-		return colorful.XyzToLinearRgb(X, Y, Z)
-	}
+	normLum := t.normalizeLDRLuminanceFn()
 
 	// Percentile
 	size := t.HDRImage.Size()
 	perc := make(percentiles, size*3) // FIXME high memory consumption => only 2 values are needed minRGB && maxRGB
 
-	completed = util.ParallelR(t.HDRImage.Bounds(), func(x1, y1, x2, y2 int) {
+	completed := util.ParallelR(t.HDRImage.Bounds(), func(x1, y1, x2, y2 int) {
 		for y := y1; y < y2; y++ {
 			for x := x1; x < x2; x++ {
 				r, g, b := normLum(x, y)
@@ -402,6 +367,53 @@ func (t *ICam06) normalizeC(channel float64) uint16 {
 	c := WoB((channel >= -0.0031308) && (channel <= 0.0031308)) * channel * 12.92
 	c += WoB(channel > 0.0031308) * (math.Pow(channel, 1/2.4)*1.055 - 0.055)
 	return uint16(RangeMax * c)
+}
+
+func (t *ICam06) normalizeLDRLuminanceFn() func(x, y int) (r, g, b float64) {
+	if ICamNormalizeLDRLuminance {
+		norMaxLum := math.Inf(-1)
+		maxCh := make(chan float64)
+
+		completed := util.ParallelR(t.HDRImage.Bounds(), func(x1, y1, x2, y2 int) {
+			var max float64
+
+			for y := y1; y < y2; y++ {
+				for x := x1; x < x2; x++ {
+					_, lum, _, _ := t.colorfullnessXsurround(x, y).HDRXYZA() // FIXME perf-1
+
+					max = math.Max(t.maxLum, lum)
+				}
+			}
+
+			maxCh <- max
+		})
+
+		for {
+			select {
+			case <-completed:
+				goto NEXT
+			case max := <-maxCh:
+				norMaxLum = math.Max(norMaxLum, max)
+			}
+		}
+	NEXT:
+
+		return func(x, y int) (r, g, b float64) {
+			X, Y, Z, _ := t.colorfullnessXsurround(x, y).HDRXYZA() // FIXME perf-1
+
+			// XYZ normalization FIXME looks like useless
+			X /= norMaxLum
+			Y /= norMaxLum
+			Z /= norMaxLum
+
+			// RGB-space conversion
+			return colorful.XyzToLinearRgb(X, Y, Z)
+		}
+	}
+	return func(x, y int) (r, g, b float64) {
+		r, g, b, _ = t.colorfullnessXsurround(x, y).HDRRGBA() // FIXME perf-1
+		return
+	}
 }
 
 func (t *ICam06) clampToZero(x float64) float64 {
