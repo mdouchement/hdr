@@ -43,7 +43,7 @@ func readUntil(r io.Reader, delimiter byte) (string, error) {
 	}
 }
 
-// A FormatError reports that the input is not a valid RGBE image.
+// A FormatError reports that the input is not a valid PFM image.
 type FormatError string
 
 func (e FormatError) Error() string {

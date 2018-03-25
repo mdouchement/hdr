@@ -10,9 +10,6 @@ import (
 	"github.com/mdouchement/hdr/hdrcolor"
 )
 
-// RLEWrites allows to write image file with run-length encoding.
-var RLEWrites = true
-
 type encoder struct {
 	w    io.Writer
 	m    hdr.Image
@@ -47,7 +44,7 @@ func (e *encoder) writeHeader() error {
 	return err
 }
 
-// Encode writes the Image m to w in RGBE format.
+// Encode writes the Image m to w in PFM format.
 func Encode(w io.Writer, m hdr.Image) error {
 	e := newEncoder(w, m)
 

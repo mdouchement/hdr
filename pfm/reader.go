@@ -84,7 +84,7 @@ func (d *decoder) parseHeader() error {
 // Reader                               //
 //--------------------------------------//
 
-// DecodeConfig returns the color model and dimensions of a RGBE image without
+// DecodeConfig returns the color model and dimensions of a PFM image without
 // decoding the entire image.
 func DecodeConfig(r io.Reader) (image.Config, error) {
 	d, err := newDecoder(r)
