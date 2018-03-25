@@ -122,9 +122,54 @@ func check(err error) {
 **MIT**
 
 
+## Implementing a TMO
+
+A TMO must implement `tmo.ToneMappingOperator`:
+
+```go
+type ToneMappingOperator interface {
+	// Perform runs the TMO mapping.
+	Perform() (image.Image, error)
+}
+```
+
+## Implementing an image codec
+
+- Reader
+
+```go
+// DecodeConfig returns the color model and dimensions of a PFM image without
+// decoding the entire image.
+func DecodeConfig(r io.Reader) (image.Config, error) {
+  // ...
+  return m, err
+}
+
+// Decode reads a HDR image from r and returns an image.Image.
+func Decode(r io.Reader) (img image.Image, err error) {
+  // ...
+  return
+}
+
+func init() {
+  // Register the format in the official lib.
+  // https://golang.org/pkg/image/#RegisterFormat
+  image.RegisterFormat("format-name", "magic-code", Decode, DecodeConfig)
+}
+```
+
+- Writer
+
+```go
+// Encode writes the Image m to w in PFM format.
+func Encode(w io.Writer, m hdr.Image) error {
+  return nil
+}
+```
+
 ## Contributing
 
-All PRs are welcome.
+All PRs are welcome. If you implement a TMO or an image codec in a dedicated repository, please tell me in order to link it in this readme.
 
 1. Fork it
 2. Create your feature branch (git checkout -b my-new-feature)
