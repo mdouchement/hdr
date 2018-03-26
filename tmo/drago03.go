@@ -35,7 +35,8 @@ func NewDrago03(m hdr.Image, bias float64) *Drago03 {
 	return &Drago03{
 		HDRImage: m,
 		// Bias is included in [0, 1] with 0.01 increment step.
-		Bias: bias,
+		Bias:   bias,
+		maxLum: math.Inf(-1),
 	}
 }
 
@@ -57,7 +58,7 @@ func (t *Drago03) luminance() {
 
 	completed := util.ParallelR(t.HDRImage.Bounds(), func(x1, y1, x2, y2 int) {
 		var avg float64
-		var max float64
+		max := math.Inf(-1)
 
 		for y := y1; y < y2; y++ {
 			for x := x1; x < x2; x++ {

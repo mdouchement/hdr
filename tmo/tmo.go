@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"image"
 	"math"
+	"sort"
 )
 
 const (
@@ -106,4 +107,32 @@ func (mm *minmax) update(v float64) {
 
 func (mm *minmax) String() string {
 	return fmt.Sprintf("min: %f, max: %f", mm.min, mm.max)
+}
+
+//-----------------//
+// Percentile      //
+//-----------------//
+
+type percentiles []float64
+
+func (p percentiles) sort() {
+	sort.Sort(p)
+}
+
+func (p percentiles) percentile(clipping float64) float64 {
+	n := float64(len(p))
+	i := int(clipping * n)
+	return float64(p[i])
+}
+
+func (p percentiles) Len() int {
+	return len(p)
+}
+
+func (p percentiles) Less(i, j int) bool {
+	return p[i] < p[j]
+}
+
+func (p percentiles) Swap(i, j int) {
+	p[i], p[j] = p[j], p[i]
 }

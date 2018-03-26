@@ -4,7 +4,6 @@ import (
 	"image"
 	"image/color"
 	"math"
-	"sort"
 
 	colorful "github.com/lucasb-eyer/go-colorful"
 	"github.com/mdouchement/hdr"
@@ -67,6 +66,7 @@ func NewICam06(m hdr.Image, contrast, minClipping, maxClipping float64) *ICam06 
 		MaxClipping: util.Clamp(0, 1, maxClipping),
 		width:       m.Bounds().Dx(),
 		height:      m.Bounds().Dy(),
+		maxLum:      math.Inf(-1),
 	}
 }
 
@@ -146,7 +146,7 @@ func (t *ICam06) luminance() {
 	maxCh := make(chan float64)
 
 	completed := util.ParallelR(t.HDRImage.Bounds(), func(x1, y1, x2, y2 int) {
-		var max float64
+		max := math.Inf(-1)
 
 		for y := y1; y < y2; y++ {
 			for x := x1; x < x2; x++ {
@@ -435,32 +435,4 @@ func (t *ICam06) maxDim() int {
 		return t.width
 	}
 	return t.height
-}
-
-//-----------------//
-// Percentile      //
-//-----------------//
-
-type percentiles []float64
-
-func (p percentiles) sort() {
-	sort.Sort(p)
-}
-
-func (p percentiles) percentile(clipping float64) float64 {
-	n := float64(len(p))
-	i := int(clipping * n)
-	return float64(p[i])
-}
-
-func (p percentiles) Len() int {
-	return len(p)
-}
-
-func (p percentiles) Less(i, j int) bool {
-	return p[i] < p[j]
-}
-
-func (p percentiles) Swap(i, j int) {
-	p[i], p[j] = p[j], p[i]
 }
