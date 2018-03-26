@@ -65,7 +65,7 @@ func (t *Drago03) luminance() {
 				_, lum, _, _ := pixel.HDRXYZA()
 
 				avg += math.Log(lum + 1e-4)
-				max = math.Max(t.maxLum, lum)
+				max = math.Max(max, lum)
 			}
 		}
 
