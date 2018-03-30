@@ -2,6 +2,7 @@ package crad
 
 import (
 	"bufio"
+	"encoding/binary"
 	"encoding/json"
 	"image"
 	"io"
@@ -73,14 +74,14 @@ func (d *decoder) parseHeader() error {
 		d.nbOfchannel = 3
 		d.config.ColorModel = hdrcolor.RGBModel
 		d.convert = func(p []byte) (float64, float64, float64) {
-			return format.FromBytes(p)
+			return format.FromBytes(binary.LittleEndian, p)
 		}
 	case FormatXYZ:
 		d.config.ColorModel = hdrcolor.XYZModel
 		d.channelSize = 4
 		d.nbOfchannel = 3
 		d.convert = func(p []byte) (float64, float64, float64) {
-			return format.FromBytes(p)
+			return format.FromBytes(binary.LittleEndian, p)
 		}
 	case FormatLogLuv:
 		d.config.ColorModel = hdrcolor.XYZModel

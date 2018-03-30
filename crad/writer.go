@@ -2,6 +2,7 @@ package crad
 
 import (
 	"bufio"
+	"encoding/binary"
 	"encoding/json"
 	"io"
 
@@ -74,14 +75,14 @@ func (e *encoder) configureHeader() error {
 		e.nbOfchannel = 3
 		e.bytesAt = func(x, y int) []byte {
 			r, g, b, _ := e.m.HDRAt(x, y).HDRRGBA()
-			return format.ToBytes(r, g, b)
+			return format.ToBytes(binary.LittleEndian, r, g, b)
 		}
 	case FormatXYZ:
 		e.channelSize = 4
 		e.nbOfchannel = 3
 		e.bytesAt = func(x, y int) []byte {
 			xx, yy, zz, _ := e.m.HDRAt(x, y).HDRXYZA()
-			return format.ToBytes(xx, yy, zz)
+			return format.ToBytes(binary.LittleEndian, xx, yy, zz)
 		}
 	case FormatLogLuv:
 		e.channelSize = 1

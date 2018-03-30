@@ -10,14 +10,6 @@ const (
 	header1 = "pf" // Grayscale
 )
 
-// byte order of each channel
-type endianness int
-
-const (
-	eLittleEndian endianness = iota
-	eBigEndian
-)
-
 // imageMode represents the mode of the image.
 type imageMode int
 

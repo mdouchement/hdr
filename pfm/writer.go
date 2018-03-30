@@ -2,6 +2,7 @@ package pfm
 
 import (
 	"bufio"
+	"encoding/binary"
 	"fmt"
 	"io"
 
@@ -66,7 +67,7 @@ func Encode(w io.Writer, m hdr.Image) error {
 		for x := 0; x < m.Bounds().Dx(); x++ {
 			r, g, b, _ := m.HDRAt(x, y).HDRRGBA()
 
-			if _, err := buff.Write(format.ToBytes(r, g, b)); err != nil {
+			if _, err := buff.Write(format.ToBytes(binary.LittleEndian, r, g, b)); err != nil {
 				return err
 			}
 		}

@@ -6,6 +6,7 @@ package pfm
 
 import (
 	"bufio"
+	"encoding/binary"
 	"fmt"
 	"image"
 	"io"
@@ -23,7 +24,7 @@ type decoder struct {
 	config     image.Config
 	scale      float64 // Scale Factor
 	mode       imageMode
-	endianness endianness
+	endianness binary.ByteOrder
 }
 
 func newDecoder(r io.Reader) (*decoder, error) {
@@ -69,9 +70,9 @@ func (d *decoder) parseHeader() error {
 				return FormatError("missing Scale Factor / Endianness specifier")
 			}
 			if scale < 0 {
-				d.endianness = eLittleEndian
+				d.endianness = binary.LittleEndian
 			} else {
-				d.endianness = eBigEndian
+				d.endianness = binary.BigEndian
 			}
 			d.scale = math.Abs(scale)
 		}
@@ -117,12 +118,6 @@ func Decode(r io.Reader) (img image.Image, err error) {
 	pixel := make([]byte, 4*3) // RGB pixel (4 Bytes per channel)
 	var R, G, B float64
 	invScale := 1 / d.scale
-	var endianFunc func(pixel []byte) (float64, float64, float64)
-	if d.endianness == eLittleEndian {
-		endianFunc = format.FromBytes
-	} else {
-		endianFunc = format.FromBytesBE
-	}
 
 	// The pixels in each row ordered left to right and the rows ordered bottom to top
 	for y := d.config.Height - 1; y >= 0; y-- {
@@ -131,7 +126,7 @@ func Decode(r io.Reader) (img image.Image, err error) {
 				return
 			}
 
-			R, G, B = endianFunc(pixel)
+			R, G, B = format.FromBytes(d.endianness, pixel)
 			m.Set(x, y, hdrcolor.RGB{
 				R: R * invScale,
 				G: G * invScale,
