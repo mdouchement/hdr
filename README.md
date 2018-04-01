@@ -17,6 +17,7 @@ Documentations:
 
 - Radiance RGBE/XYZE
 - PFM, Portable FloatMap file format
+- TIFF using [mdouchement/tiff](https://github.com/mdouchement/tiff)
 - CRAD, homemade HDR file format
 
 ## Supported tone mapping operators
