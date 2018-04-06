@@ -41,7 +41,7 @@ func init() {
 // The brain continuously interprets this information so that a viewer can see in a wide range of light conditions.
 type ToneMappingOperator interface {
 	// Perform runs the TMO mapping.
-	Perform() (image.Image, error)
+	Perform() image.Image
 }
 
 // LinearInversePixelMapping is an linear inverse pixel mapping.
