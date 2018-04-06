@@ -4,7 +4,7 @@
 [![Go Report Card](https://goreportcard.com/badge/github.com/mdouchement/hdr)](https://goreportcard.com/report/github.com/mdouchement/hdr)
 [![License](https://img.shields.io/github/license/mdouchement/hdr.svg)](http://opensource.org/licenses/MIT)
 
-HDR is a library that handles RAW image format written with Golang.
+HDR is a library that handles RAW image format written with Golang. [Here](https://github.com/mdouchement/hdr_examples#hdr-gallery-examples) some rendering examples.
 
 It aims to provide tools to read [HDR](https://en.wikipedia.org/wiki/High-dynamic-range_imaging) files and convert it to a LDR (Low Dynamic Range, aka PNG/JPEG/etc.) in an `image.Image` object.
 
