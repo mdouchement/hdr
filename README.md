@@ -29,6 +29,7 @@ Read this [documentation](https://hal.archives-ouvertes.fr/hal-00724931/document
 - Linear
 - Logarithmic
 - Drago '03    - Adaptive logarithmic mapping for displaying high contrast scenes
+- Durand       - Fast bilateral filtering for the display of high-dynamic-range images
 - Reinhard '05 - Photographic tone reproduction for digital images
   - Playing with parameters could provide better rendering
 - Custom Reinhard '05
@@ -91,8 +92,10 @@ func main() {
 		// t := tmo.NewLinear(hdrm)
 		// t := tmo.NewLogarithmic(hdrm)
 		// t := tmo.NewDefaultDrago03(hdrm)
+		// t := tmo.NewDefaultDurand(hdrm)
 		// t := tmo.NewDefaultCustomReinhard05(hdrm)
 		t := tmo.NewDefaultReinhard05(hdrm)
+		// t := tmo.NewDefaultICam06(hdrm)
 		m = t.Perform()
 
 		fmt.Println("Apply TMO took", time.Since(startTMO))
