@@ -133,7 +133,7 @@ A TMO must implement `tmo.ToneMappingOperator`:
 ```go
 type ToneMappingOperator interface {
 	// Perform runs the TMO mapping.
-	Perform() (image.Image, error)
+	Perform() image.Image
 }
 ```
 
