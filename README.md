@@ -13,7 +13,7 @@ Documentations:
  - http://www.anyhere.com/gward/hdrenc/hdr_encodings.html
 
 
-## Supported file formats
+## Supported codecs (file formats)
 
 - Radiance RGBE/XYZE
 - PFM, Portable FloatMap file format
@@ -54,7 +54,7 @@ import (
 	"time"
 
 	"github.com/mdouchement/hdr"
-	_ "github.com/mdouchement/hdr/rgbe"
+	_ "github.com/mdouchement/hdr/codec/rgbe"
 	"github.com/mdouchement/hdr/tmo"
 )
 
