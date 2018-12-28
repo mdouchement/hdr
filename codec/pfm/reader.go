@@ -50,14 +50,15 @@ func (d *decoder) parseHeader() error {
 
 		switch i {
 		case 0:
-			if token == header0 {
+			switch token {
+			case header0:
 				// Header found
 				d.mode = mColor
 				d.config.ColorModel = hdrcolor.RGBModel
-			} else if token == header1 {
+			case header1:
 				// Header found
 				d.mode = mGrayscale
-			} else {
+			default:
 				return FormatError("format not compatible")
 			}
 		case 1:
@@ -135,7 +136,7 @@ func Decode(r io.Reader) (img image.Image, err error) {
 		}
 	}
 
-	return
+	return img, nil
 }
 
 func init() {

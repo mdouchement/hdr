@@ -222,7 +222,6 @@ func (f *YFastBilateral) convolution() {
 			}
 		}
 	}
-	return
 }
 
 func (f *YFastBilateral) normalize() {

@@ -1,7 +1,0 @@
-{
-  "Disable": ["goconst", "structcheck", "varcheck","testify", "test", "interfacer", "unconvert", "safesql", "staticcheck", "unparam", "unused", "gosimple", "errcheck", "aligncheck"],
-  "Enable": ["vet", "vetshadow", "misspell", "ineffassign", "deadcode", "gofmt", "golint"],
-  "Vendor": true,
-  "Test": true,
-  "Exclude": ["^/.*", "vendor/.*", ".*_test.go$", "testouille/.*"]
-}

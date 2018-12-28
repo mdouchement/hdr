@@ -31,6 +31,7 @@ func (t *Linear) Perform() image.Image {
 	return img
 }
 
+//nolint[dupl]
 func (t *Linear) minmax() (rmm, gmm, bmm *minmax) {
 	rmm, gmm, bmm = newMinMax(), newMinMax(), newMinMax()
 	mmCh := make(chan []*minmax)

@@ -205,7 +205,7 @@ func Decode(r io.Reader) (img image.Image, err error) {
 		}
 	}
 
-	return
+	return img, nil
 }
 
 func init() {

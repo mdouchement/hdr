@@ -88,7 +88,7 @@ NEXT:
 
 	t.avgLum = math.Exp(t.avgLum / float64(t.HDRImage.Size()))
 	// Normalize
-	t.maxLum = t.maxLum / t.avgLum
+	t.maxLum /= t.avgLum
 	// Set divider
 	t.divider = math.Log10(t.maxLum + 1.0)
 }

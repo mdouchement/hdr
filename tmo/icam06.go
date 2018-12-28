@@ -430,9 +430,10 @@ func (t *ICam06) minDim() int {
 	return t.height
 }
 
-func (t *ICam06) maxDim() int {
-	if t.width > t.height {
-		return t.width
-	}
-	return t.height
-}
+// Unused for the moment
+// func (t *ICam06) maxDim() int {
+// 	if t.width > t.height {
+// 		return t.width
+// 	}
+// 	return t.height
+// }

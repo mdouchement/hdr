@@ -32,6 +32,7 @@ func (t *Logarithmic) Perform() image.Image {
 	return img
 }
 
+//nolint[dupl]
 func (t *Logarithmic) minmax() (rmm, gmm, bmm *minmax) {
 	rmm, gmm, bmm = newMinMax(), newMinMax(), newMinMax()
 	mmCh := make(chan []*minmax)
