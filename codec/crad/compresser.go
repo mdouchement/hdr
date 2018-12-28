@@ -11,8 +11,7 @@ type compresserWriter interface {
 }
 
 func newCompresserWriter(w io.Writer, h *Header) (c compresserWriter) {
-	switch h.Compression {
-	case CompressionGzip:
+	if h.Compression == CompressionGzip {
 		c = gzip.NewWriter(w)
 	}
 
@@ -21,11 +20,12 @@ func newCompresserWriter(w io.Writer, h *Header) (c compresserWriter) {
 
 func newCompresserReader(r io.Reader, h *Header) (c io.ReadCloser) {
 	var err error
-	switch h.Compression {
-	case CompressionGzip:
+	if h.Compression == CompressionGzip {
 		c, err = gzip.NewReader(r)
 	}
-	check(err)
+	if err != nil {
+		panic(err) // Should never occurred
+	}
 
 	return
 }

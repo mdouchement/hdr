@@ -122,7 +122,7 @@ func (p percentiles) sort() {
 func (p percentiles) percentile(clipping float64) float64 {
 	n := float64(len(p))
 	i := int(clipping * n)
-	return float64(p[i])
+	return p[i]
 }
 
 func (p percentiles) Len() int {

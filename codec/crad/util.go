@@ -61,9 +61,3 @@ type InternalError string
 func (e InternalError) Error() string {
 	return "crad: internal error: " + string(e)
 }
-
-func check(err error) {
-	if err != nil {
-		panic(err)
-	}
-}

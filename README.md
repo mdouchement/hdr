@@ -188,5 +188,5 @@ As possible, run the following commands to format and lint the code:
 find . -name '*.go' -not -path './vendor*' -exec gofmt -s -w {} \;
 
 # Lint
-gometalinter --config=gometalinter.json ./...
+golangci-lint run -c .golangci.yml
 ```

@@ -1,5 +1,6 @@
 package filter
 
+//nolint[unparam]
 func clamp(min, max, v int) int {
 	if v < min {
 		v = min

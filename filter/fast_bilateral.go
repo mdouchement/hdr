@@ -254,7 +254,6 @@ func (f *FastBilateral) convolution() {
 			}
 		}
 	}
-	return
 }
 
 // Perform linear interpolation.

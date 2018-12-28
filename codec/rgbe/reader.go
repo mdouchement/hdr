@@ -206,7 +206,7 @@ func (d *decoder) readRLE(scanline []byte) (err error) {
 		}
 	}
 
-	return
+	return err
 }
 
 //--------------------------------------//
@@ -280,7 +280,7 @@ func Decode(r io.Reader) (img image.Image, err error) {
 		}
 	}
 
-	return
+	return img, nil
 }
 
 func init() {
