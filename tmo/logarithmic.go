@@ -6,7 +6,7 @@ import (
 	"math"
 
 	"github.com/mdouchement/hdr"
-	"github.com/mdouchement/hdr/util"
+	"github.com/mdouchement/hdr/parallel"
 )
 
 // A Logarithmic is a naive TMO implementation.
@@ -37,7 +37,7 @@ func (t *Logarithmic) minmax() (rmm, gmm, bmm *minmax) {
 	rmm, gmm, bmm = newMinMax(), newMinMax(), newMinMax()
 	mmCh := make(chan []*minmax)
 
-	completed := util.ParallelR(t.HDRImage.Bounds(), func(x1, y1, x2, y2 int) {
+	completed := parallel.TilesR(t.HDRImage.Bounds(), func(x1, y1, x2, y2 int) {
 		rrmm, ggmm, bbmm := newMinMax(), newMinMax(), newMinMax()
 
 		for y := y1; y < y2; y++ {
@@ -75,7 +75,7 @@ func (t *Logarithmic) shiftLogRescale(img *image.RGBA64, rmm, gmm, bmm *minmax) 
 	// Calculate max for rescale
 	rmax, gmax, bmax := logMax(rmm), logMax(gmm), logMax(bmm)
 
-	completed := util.ParallelR(t.HDRImage.Bounds(), func(x1, y1, x2, y2 int) {
+	completed := parallel.TilesR(t.HDRImage.Bounds(), func(x1, y1, x2, y2 int) {
 		for y := y1; y < y2; y++ {
 			for x := x1; x < x2; x++ {
 				pixel := t.HDRImage.HDRAt(x, y)

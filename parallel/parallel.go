@@ -1,4 +1,4 @@
-package util
+package parallel
 
 import (
 	"image"
@@ -10,13 +10,13 @@ import (
 
 var ncpu = runtime.NumCPU()
 
-// ParallelR runs Parallel with the given r boundaries.
-func ParallelR(r image.Rectangle, f func(x1, y1, x2, y2 int)) chan struct{} {
-	return Parallel(r.Dx(), r.Dy(), f)
+// TilesR runs Tiles with the given r boundaries.
+func TilesR(r image.Rectangle, f func(x1, y1, x2, y2 int)) chan struct{} {
+	return Tiles(r.Dx(), r.Dy(), f)
 }
 
-// Parallel runs f in runtime.NumCPU() parallel tiles.
-func Parallel(width, height int, f func(x1, y1, x2, y2 int)) chan struct{} {
+// Tiles runs f in runtime.NumCPU() parallel tiles.
+func Tiles(width, height int, f func(x1, y1, x2, y2 int)) chan struct{} {
 	// FIXME use context
 	wg := &sync.WaitGroup{}
 	completed := make(chan struct{})

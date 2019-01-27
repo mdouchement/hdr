@@ -8,6 +8,7 @@ import (
 
 	"github.com/mdouchement/hdr"
 	"github.com/mdouchement/hdr/hdrcolor"
+	"github.com/mdouchement/hdr/mathx"
 	"gonum.org/v1/gonum/mat"
 )
 
@@ -112,9 +113,9 @@ func (f *YFastBilateral) HDRAt(x, y int) hdrcolor.Color {
 func (f *YFastBilateral) At(x, y int) color.Color {
 	r, g, b, _ := f.HDRAt(x, y).HDRRGBA()
 	return color.RGBA{
-		R: uint8(clamp(0, 255, int(r*255))),
-		G: uint8(clamp(0, 255, int(g*255))),
-		B: uint8(clamp(0, 255, int(b*255))),
+		R: uint8(mathx.Clamp(0, 255, int(r*255))),
+		G: uint8(mathx.Clamp(0, 255, int(g*255))),
+		B: uint8(mathx.Clamp(0, 255, int(b*255))),
 		A: 255,
 	}
 }
@@ -163,14 +164,14 @@ func (f *YFastBilateral) minmax() {
 
 	// fmt.Println("ssp:", f.SigmaSpace, " - sra:", f.SigmaRange)
 	// fmt.Println("min:", f.min, "- max:", f.max)
-	// fmt.Println("size:", mul(f.size...), f.size)
+	// fmt.Println("size:", mathx.Mul(f.size...), f.size)
 }
 
 func (f *YFastBilateral) downsampling() {
 	d := f.HDRImage.Bounds()
 	offset := make([]int, yDimension)
 
-	size := mul(f.size...)
+	size := mathx.Mul(f.size...)
 	dim := yDimension - 1 // # 1 luminance and 1 threshold (edge weight)
 	f.grid = mat.NewDense(size, dim, make([]float64, dim*size))
 
@@ -193,7 +194,7 @@ func (f *YFastBilateral) downsampling() {
 }
 
 func (f *YFastBilateral) convolution() {
-	size := mul(f.size...)
+	size := mathx.Mul(f.size...)
 	dim := yDimension - 1 // # luminance and 1 threshold (edge weight)
 	buffer := mat.NewDense(size, dim, make([]float64, dim*size))
 
@@ -239,12 +240,12 @@ func (f *YFastBilateral) trilinearInterpolation(gx, gy, gz float64) float64 {
 	depth := f.size[2]
 
 	// Index
-	x := clamp(0, width-1, int(gx))
-	xx := clamp(0, width-1, x+1)
-	y := clamp(0, height-1, int(gy))
-	yy := clamp(0, height-1, y+1)
-	z := clamp(0, depth-1, int(gz))
-	zz := clamp(0, depth-1, z+1)
+	x := mathx.Clamp(0, width-1, int(gx))
+	xx := mathx.Clamp(0, width-1, x+1)
+	y := mathx.Clamp(0, height-1, int(gy))
+	yy := mathx.Clamp(0, height-1, y+1)
+	z := mathx.Clamp(0, depth-1, int(gz))
+	zz := mathx.Clamp(0, depth-1, z+1)
 
 	// Alpha
 	xa := gx - float64(x)
@@ -266,7 +267,7 @@ func (f *YFastBilateral) trilinearInterpolation(gx, gy, gz float64) float64 {
 func (f *YFastBilateral) offset(size ...int) (n int) {
 	n = size[0] // x
 	for i, v := range size[1:] {
-		n += v * mul(f.size[0:i+1]...) // y, z
+		n += v * mathx.Mul(f.size[0:i+1]...) // y, z
 	}
 	return
 }

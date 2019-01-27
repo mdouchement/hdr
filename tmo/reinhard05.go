@@ -8,7 +8,8 @@ import (
 
 	"github.com/mdouchement/hdr"
 	"github.com/mdouchement/hdr/filter"
-	"github.com/mdouchement/hdr/util"
+	"github.com/mdouchement/hdr/mathx"
+	"github.com/mdouchement/hdr/parallel"
 )
 
 const (
@@ -22,19 +23,22 @@ const (
 // E. Reinhard and K. Devlin.
 // In IEEE Transactions on Visualization and Computer Graphics, 2005.
 type Reinhard05 struct {
-	HDRImage   hdr.Image
+	HDRImage hdr.Image
+	// Brightness is included in [-20, 20] with 0.1 increment step.
 	Brightness float64
-	Chromatic  float64
-	Light      float64
-	lumOnce    sync.Once
-	cav        []float64
-	lav        float64
-	minLum     float64
-	maxLum     float64
-	worldLum   float64
-	k          float64
-	m          float64
-	f          float64
+	// Chromatic is included in [0, 1] with 0.01 increment step.
+	Chromatic float64
+	// Light is included in [0, 1] with 0.01 increment step.
+	Light    float64
+	lumOnce  sync.Once
+	cav      []float64
+	lav      float64
+	minLum   float64
+	maxLum   float64
+	worldLum float64
+	k        float64
+	m        float64
+	f        float64
 }
 
 // NewDefaultReinhard05 instanciates a new Reinhard05 TMO with default parameters.
@@ -45,16 +49,13 @@ func NewDefaultReinhard05(m hdr.Image) *Reinhard05 {
 // NewReinhard05 instanciates a new Reinhard05 TMO.
 func NewReinhard05(m hdr.Image, brightness, chromatic, light float64) *Reinhard05 {
 	return &Reinhard05{
-		HDRImage: m,
-		// Brightness is included in [-20, 20] with 0.1 increment step.
-		Brightness: brightness,
-		// Chromatic is included in [0, 1] with 0.01 increment step.
-		Chromatic: chromatic,
-		// Light is included in [0, 1] with 0.01 increment step.
-		Light:  light,
-		cav:    make([]float64, 3),
-		minLum: math.Inf(1),
-		maxLum: math.Inf(-1),
+		HDRImage:   m,
+		Brightness: mathx.ClampF64(-20, 20, brightness),
+		Chromatic:  mathx.ClampF64(0, 1, chromatic),
+		Light:      mathx.ClampF64(0, 1, light),
+		cav:        make([]float64, 3),
+		minLum:     math.Inf(1),
+		maxLum:     math.Inf(-1),
 	}
 }
 
@@ -75,7 +76,7 @@ func (t *Reinhard05) luminance() {
 	reinhardCh := make(chan *Reinhard05)
 	qsImg := filter.NewQuickSampling(t.HDRImage, 0.6)
 
-	completed := util.ParallelR(qsImg.Bounds(), func(x1, y1, x2, y2 int) {
+	completed := parallel.TilesR(qsImg.Bounds(), func(x1, y1, x2, y2 int) {
 		tt := NewDefaultReinhard05(nil)
 
 		for y := y1; y < y2; y++ {
@@ -141,7 +142,7 @@ func (t *Reinhard05) tonemap() (minSample, maxSample float64) {
 
 	qsImg := filter.NewQuickSampling(t.HDRImage, 0.6)
 
-	completed := util.ParallelR(qsImg.Bounds(), func(x1, y1, x2, y2 int) {
+	completed := parallel.TilesR(qsImg.Bounds(), func(x1, y1, x2, y2 int) {
 		min := 1.0
 		max := 0.0
 
@@ -202,7 +203,7 @@ func (t *Reinhard05) sampling(sample, lum float64, c int) float64 {
 }
 
 func (t *Reinhard05) normalize(img *image.RGBA64, minSample, maxSample float64) {
-	completed := util.ParallelR(t.HDRImage.Bounds(), func(x1, y1, x2, y2 int) {
+	completed := parallel.TilesR(t.HDRImage.Bounds(), func(x1, y1, x2, y2 int) {
 		for y := y1; y < y2; y++ {
 			for x := x1; x < x2; x++ {
 				pixel := t.HDRImage.HDRAt(x, y)
@@ -236,7 +237,7 @@ func (t *Reinhard05) nrmz(channel, minSample, maxSample float64) uint16 {
 	channel = LinearInversePixelMapping(channel, LumPixFloor, LumSize)
 
 	// Clamp to solid black and solid white
-	channel = Clamp(channel)
+	channel = LDRClamp(channel)
 
 	return uint16(channel)
 }

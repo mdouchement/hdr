@@ -8,7 +8,8 @@ import (
 
 	colorful "github.com/lucasb-eyer/go-colorful"
 	"github.com/mdouchement/hdr"
-	"github.com/mdouchement/hdr/util"
+	"github.com/mdouchement/hdr/mathx"
+	"github.com/mdouchement/hdr/parallel"
 )
 
 // A Drago03 is an adaptive TMO implementation based on Frederic Drago's 2003 white paper.
@@ -17,12 +18,13 @@ import (
 // http://resources.mpi-inf.mpg.de/tmo/logmap/
 type Drago03 struct {
 	HDRImage hdr.Image
-	Bias     float64
-	lumOnce  sync.Once
-	maxLum   float64
-	avgLum   float64
-	divider  float64
-	biasP    float64
+	// Bias is included in [0, 1] with 0.01 increment step.
+	Bias    float64
+	lumOnce sync.Once
+	maxLum  float64
+	avgLum  float64
+	divider float64
+	biasP   float64
 }
 
 // NewDefaultDrago03 instanciates a new Drago03 TMO with default parameters.
@@ -34,9 +36,8 @@ func NewDefaultDrago03(m hdr.Image) *Drago03 {
 func NewDrago03(m hdr.Image, bias float64) *Drago03 {
 	return &Drago03{
 		HDRImage: m,
-		// Bias is included in [0, 1] with 0.01 increment step.
-		Bias:   bias,
-		maxLum: math.Inf(-1),
+		Bias:     mathx.ClampF64(0, 1, bias),
+		maxLum:   math.Inf(-1),
 	}
 }
 
@@ -56,7 +57,7 @@ func (t *Drago03) luminance() {
 	avgCh := make(chan float64)
 	maxCh := make(chan float64)
 
-	completed := util.ParallelR(t.HDRImage.Bounds(), func(x1, y1, x2, y2 int) {
+	completed := parallel.TilesR(t.HDRImage.Bounds(), func(x1, y1, x2, y2 int) {
 		var avg float64
 		max := math.Inf(-1)
 
@@ -94,7 +95,7 @@ NEXT:
 }
 
 func (t *Drago03) tonemap(img *image.RGBA64) {
-	completed := util.ParallelR(t.HDRImage.Bounds(), func(x1, y1, x2, y2 int) {
+	completed := parallel.TilesR(t.HDRImage.Bounds(), func(x1, y1, x2, y2 int) {
 		var lumAvgRatio float64
 		var newLum float64
 
@@ -133,7 +134,7 @@ func (t *Drago03) normalize(channel float64) uint16 {
 	channel = LinearInversePixelMapping(channel, LumPixFloor, LumSize)
 
 	// Clamp to solid black and solid white
-	channel = Clamp(channel)
+	channel = LDRClamp(channel)
 
 	return uint16(channel)
 }

@@ -8,7 +8,7 @@ import (
 
 	"github.com/mdouchement/hdr"
 	"github.com/mdouchement/hdr/filter"
-	"github.com/mdouchement/hdr/util"
+	"github.com/mdouchement/hdr/parallel"
 )
 
 const (
@@ -62,7 +62,7 @@ func (t *Durand) luminance() {
 	maxCh := make(chan float64)
 	minCh := make(chan float64)
 
-	completed := util.ParallelR(t.HDRImage.Bounds(), func(x1, y1, x2, y2 int) {
+	completed := parallel.TilesR(t.HDRImage.Bounds(), func(x1, y1, x2, y2 int) {
 		min, max := math.Inf(1), math.Inf(-1)
 
 		for y := y1; y < y2; y++ {
@@ -99,7 +99,7 @@ func (t *Durand) tonemap(m *image.RGBA64) {
 	pow := math.Pow(math.Pow(10, compressionFactor), k2)
 	s := ((1 + k1) * pow) / (1 + k1*pow)
 
-	completed := util.ParallelR(t.HDRImage.Bounds(), func(x1, y1, x2, y2 int) {
+	completed := parallel.TilesR(t.HDRImage.Bounds(), func(x1, y1, x2, y2 int) {
 		for y := y1; y < y2; y++ {
 			for x := x1; x < x2; x++ {
 				pixel := t.HDRImage.HDRAt(x, y)
@@ -145,7 +145,7 @@ func (t *Durand) tonemap(m *image.RGBA64) {
 
 func (t *Durand) normalize(channel float64) uint16 {
 	channel = LinearInversePixelMapping(channel, LumPixFloor, LumSize)
-	return uint16(Clamp(channel))
+	return uint16(LDRClamp(channel))
 }
 
 func (t *Durand) clampToZero(x float64) float64 {

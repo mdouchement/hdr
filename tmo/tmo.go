@@ -5,6 +5,8 @@ import (
 	"image"
 	"math"
 	"sort"
+
+	"github.com/mdouchement/hdr/mathx"
 )
 
 const (
@@ -65,15 +67,9 @@ func LinearInversePixelMapping(lum float64, lumMap []float64, lumSize int) float
 	}
 }
 
-// Clamp to solid black and solid white.
-func Clamp(channel float64) float64 {
-	if channel < RangeMin {
-		channel = RangeMin
-	}
-	if channel > RangeMax {
-		channel = RangeMax
-	}
-	return channel
+// LDRClamp to solid black and solid white.
+func LDRClamp(channel float64) float64 {
+	return mathx.ClampF64(RangeMin, RangeMax, channel)
 }
 
 // WoB returns 1.0 if b is true, else 0.0
