@@ -7,18 +7,22 @@ import (
 
 	"github.com/mdouchement/hdr"
 	"github.com/mdouchement/hdr/filter"
-	"github.com/mdouchement/hdr/util"
+	"github.com/mdouchement/hdr/mathx"
+	"github.com/mdouchement/hdr/parallel"
 )
 
 // A CustomReinhard05 is a custom Reinhard05 TMO implementation.
 // It looks like a JPEG photo taken with a smartphone.
 // It provides a quick render with less RAM consumption than Reinhard05.
 type CustomReinhard05 struct {
-	HDRImage   hdr.Image
+	HDRImage hdr.Image
+	// Brightness is included in [-50, 50] with 1 increment step.
 	Brightness float64
-	Chromatic  float64
-	Light      float64
-	f          float64
+	// Chromatic is included in [0, 1] with 0.01 increment step.
+	Chromatic float64
+	// Light is included in [0, 1] with 0.01 increment step.
+	Light float64
+	f     float64
 }
 
 // NewDefaultCustomReinhard05 instanciates a new CustomReinhard05 TMO with default parameters.
@@ -29,13 +33,10 @@ func NewDefaultCustomReinhard05(m hdr.Image) *CustomReinhard05 {
 // NewCustomReinhard05 instanciates a new CustomReinhard05 TMO.
 func NewCustomReinhard05(m hdr.Image, brightness, chromatic, light float64) *CustomReinhard05 {
 	return &CustomReinhard05{
-		HDRImage: m,
-		// Brightness is included in [-50, 50] with 1 increment step.
-		Brightness: brightness * 10,
-		// Chromatic is included in [0, 1] with 0.01 increment step.
-		Chromatic: chromatic,
-		// Light is included in [0, 1] with 0.01 increment step.
-		Light: light * 10,
+		HDRImage:   m,
+		Brightness: mathx.ClampF64(-50, 50, brightness) * 10,
+		Chromatic:  mathx.ClampF64(0, 1, chromatic),
+		Light:      mathx.ClampF64(0, 1, light) * 10,
 	}
 }
 
@@ -61,7 +62,7 @@ func (t *CustomReinhard05) tonemap() (minSample, maxSample float64) {
 	minCh := make(chan float64)
 	maxCh := make(chan float64)
 
-	completed := util.ParallelR(qsImg.Bounds(), func(x1, y1, x2, y2 int) {
+	completed := parallel.TilesR(qsImg.Bounds(), func(x1, y1, x2, y2 int) {
 		min := 1.0
 		max := 0.0
 
@@ -120,7 +121,7 @@ func (t *CustomReinhard05) sampling(sample, lum float64) float64 {
 }
 
 func (t *CustomReinhard05) normalize(img *image.RGBA64, minSample, maxSample float64) {
-	completed := util.ParallelR(t.HDRImage.Bounds(), func(x1, y1, x2, y2 int) {
+	completed := parallel.TilesR(t.HDRImage.Bounds(), func(x1, y1, x2, y2 int) {
 		for y := y1; y < y2; y++ {
 			for x := x1; x < x2; x++ {
 				pixel := t.HDRImage.HDRAt(x, y)
@@ -153,7 +154,7 @@ func (t *CustomReinhard05) nrmz(channel, minSample, maxSample float64) uint16 {
 	channel = LinearInversePixelMapping(channel, LumPixFloor, LumSize)
 
 	// Clamp to solid black and solid white
-	channel = Clamp(channel)
+	channel = LDRClamp(channel)
 
 	return uint16(channel)
 }
