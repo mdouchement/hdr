@@ -6,7 +6,7 @@ import (
 
 	"github.com/mdouchement/hdr"
 	"github.com/mdouchement/hdr/hdrcolor"
-	"github.com/mdouchement/hdr/mathx"
+	"github.com/mdouchement/hdr/xmath"
 )
 
 // An Apply filter let's you apply any function on two colors.
@@ -92,9 +92,9 @@ func (f *Apply) HDRAt(x, y int) hdrcolor.Color {
 func (f *Apply) At(x, y int) color.Color {
 	r, g, b, _ := f.HDRAt(x, y).HDRRGBA()
 	return color.RGBA{
-		R: uint8(mathx.Clamp(0, 255, int(r*255))),
-		G: uint8(mathx.Clamp(0, 255, int(g*255))),
-		B: uint8(mathx.Clamp(0, 255, int(b*255))),
+		R: uint8(xmath.Clamp(0, 255, int(r*255))),
+		G: uint8(xmath.Clamp(0, 255, int(g*255))),
+		B: uint8(xmath.Clamp(0, 255, int(b*255))),
 		A: 255,
 	}
 }

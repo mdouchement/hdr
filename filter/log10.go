@@ -7,7 +7,7 @@ import (
 
 	"github.com/mdouchement/hdr"
 	"github.com/mdouchement/hdr/hdrcolor"
-	"github.com/mdouchement/hdr/mathx"
+	"github.com/mdouchement/hdr/xmath"
 )
 
 // A Log10 applies a log10 for all pixels of the image.
@@ -79,9 +79,9 @@ func (f *Log10) HDRAt(x, y int) hdrcolor.Color {
 func (f *Log10) At(x, y int) color.Color {
 	r, g, b, _ := f.HDRAt(x, y).HDRRGBA()
 	return color.RGBA{
-		R: uint8(mathx.Clamp(0, 255, int(r*255))),
-		G: uint8(mathx.Clamp(0, 255, int(g*255))),
-		B: uint8(mathx.Clamp(0, 255, int(b*255))),
+		R: uint8(xmath.Clamp(0, 255, int(r*255))),
+		G: uint8(xmath.Clamp(0, 255, int(g*255))),
+		B: uint8(xmath.Clamp(0, 255, int(b*255))),
 		A: 255,
 	}
 }

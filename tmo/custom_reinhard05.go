@@ -7,7 +7,7 @@ import (
 
 	"github.com/mdouchement/hdr"
 	"github.com/mdouchement/hdr/filter"
-	"github.com/mdouchement/hdr/mathx"
+	"github.com/mdouchement/hdr/xmath"
 	"github.com/mdouchement/hdr/parallel"
 )
 
@@ -34,9 +34,9 @@ func NewDefaultCustomReinhard05(m hdr.Image) *CustomReinhard05 {
 func NewCustomReinhard05(m hdr.Image, brightness, chromatic, light float64) *CustomReinhard05 {
 	return &CustomReinhard05{
 		HDRImage:   m,
-		Brightness: mathx.ClampF64(-50, 50, brightness) * 10,
-		Chromatic:  mathx.ClampF64(0, 1, chromatic),
-		Light:      mathx.ClampF64(0, 1, light) * 10,
+		Brightness: xmath.ClampF64(-50, 50, brightness) * 10,
+		Chromatic:  xmath.ClampF64(0, 1, chromatic),
+		Light:      xmath.ClampF64(0, 1, light) * 10,
 	}
 }
 

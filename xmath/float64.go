@@ -1,4 +1,4 @@
-package mathx
+package xmath
 
 // ClampF64 forces v to be between min and max.
 func ClampF64(min, max, v float64) float64 {

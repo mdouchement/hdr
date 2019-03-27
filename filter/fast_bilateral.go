@@ -10,7 +10,7 @@ import (
 
 	"github.com/mdouchement/hdr"
 	"github.com/mdouchement/hdr/hdrcolor"
-	"github.com/mdouchement/hdr/mathx"
+	"github.com/mdouchement/hdr/xmath"
 	"gonum.org/v1/gonum/mat"
 )
 
@@ -126,9 +126,9 @@ func (f *FastBilateral) HDRAt(x, y int) hdrcolor.Color {
 func (f *FastBilateral) At(x, y int) color.Color {
 	r, g, b, _ := f.HDRAt(x, y).HDRRGBA()
 	return color.RGBA{
-		R: uint8(mathx.Clamp(0, 255, int(r*255))),
-		G: uint8(mathx.Clamp(0, 255, int(g*255))),
-		B: uint8(mathx.Clamp(0, 255, int(b*255))),
+		R: uint8(xmath.Clamp(0, 255, int(r*255))),
+		G: uint8(xmath.Clamp(0, 255, int(g*255))),
+		B: uint8(xmath.Clamp(0, 255, int(b*255))),
 		A: 255,
 	}
 }
@@ -187,7 +187,7 @@ func (f *FastBilateral) minmax() {
 
 	// fmt.Println("ssp:", f.SigmaSpace, " - sra:", f.SigmaRange)
 	// fmt.Println("min:", f.min, "- max:", f.max)
-	// fmt.Println("size:", mathx.Mul(f.size...), f.size)
+	// fmt.Println("size:", xmath.Mul(f.size...), f.size)
 }
 
 func (f *FastBilateral) downsampling() {
@@ -267,8 +267,8 @@ func (f *FastBilateral) nLinearInterpolation(offset ...float64) *cell {
 	for n, s := range f.size {
 		off := offset[n]
 		size := s - 1
-		index[n] = mathx.Clamp(0, size, int(off))
-		indexx[n] = mathx.Clamp(0, size, index[n]+1)
+		index[n] = xmath.Clamp(0, size, int(off))
+		indexx[n] = xmath.Clamp(0, size, index[n]+1)
 		alpha[n] = off - float64(index[n])
 	}
 

@@ -8,7 +8,7 @@ import (
 
 	colorful "github.com/lucasb-eyer/go-colorful"
 	"github.com/mdouchement/hdr"
-	"github.com/mdouchement/hdr/mathx"
+	"github.com/mdouchement/hdr/xmath"
 	"github.com/mdouchement/hdr/parallel"
 )
 
@@ -36,7 +36,7 @@ func NewDefaultDrago03(m hdr.Image) *Drago03 {
 func NewDrago03(m hdr.Image, bias float64) *Drago03 {
 	return &Drago03{
 		HDRImage: m,
-		Bias:     mathx.ClampF64(0, 1, bias),
+		Bias:     xmath.ClampF64(0, 1, bias),
 		maxLum:   math.Inf(-1),
 	}
 }

@@ -9,7 +9,7 @@ import (
 	"github.com/mdouchement/hdr"
 	"github.com/mdouchement/hdr/filter"
 	"github.com/mdouchement/hdr/hdrcolor"
-	"github.com/mdouchement/hdr/mathx"
+	"github.com/mdouchement/hdr/xmath"
 	"github.com/mdouchement/hdr/parallel"
 )
 
@@ -62,9 +62,9 @@ func NewDefaultICam06(m hdr.Image) *ICam06 {
 func NewICam06(m hdr.Image, contrast, minClipping, maxClipping float64) *ICam06 {
 	return &ICam06{
 		HDRImage:    m,
-		Contrast:    mathx.ClampF64(0.6, 0.85, contrast),
-		MinClipping: mathx.ClampF64(0, 1, minClipping),
-		MaxClipping: mathx.ClampF64(0, 1, maxClipping),
+		Contrast:    xmath.ClampF64(0.6, 0.85, contrast),
+		MinClipping: xmath.ClampF64(0, 1, minClipping),
+		MaxClipping: xmath.ClampF64(0, 1, maxClipping),
 		width:       m.Bounds().Dx(),
 		height:      m.Bounds().Dy(),
 		maxLum:      math.Inf(-1),
@@ -345,9 +345,9 @@ func (t *ICam06) normalize(m *image.RGBA64) {
 				r, g, b := normLum(x, y)
 
 				// Clipping, second part
-				r = mathx.ClampF64(0, 1, (r-minRGB)/(maxRGB-minRGB))
-				g = mathx.ClampF64(0, 1, (g-minRGB)/(maxRGB-minRGB))
-				b = mathx.ClampF64(0, 1, (b-minRGB)/(maxRGB-minRGB))
+				r = xmath.ClampF64(0, 1, (r-minRGB)/(maxRGB-minRGB))
+				g = xmath.ClampF64(0, 1, (g-minRGB)/(maxRGB-minRGB))
+				b = xmath.ClampF64(0, 1, (b-minRGB)/(maxRGB-minRGB))
 
 				// RGB normalization
 				m.SetRGBA64(x, y, color.RGBA64{

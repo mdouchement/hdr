@@ -1,4 +1,4 @@
-package mathx
+package xmath
 
 // Abs returns the absolute value of x.
 func Abs(x int) int {
