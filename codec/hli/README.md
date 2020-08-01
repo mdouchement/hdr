@@ -9,9 +9,9 @@ File extension `.hli`.
 
 `[magic number][1-byte header-size length][variable-length header-size][variable-length header][raster]`
 
-### Magic number
+### Magic number
 
-The magic number of the the HLI is `HLi.v1` at the first line.
+The magic number of the HLI format is `HLi.v1` at the beginning of the file.
 
 ### Header
 
