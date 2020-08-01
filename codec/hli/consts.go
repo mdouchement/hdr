@@ -1,7 +1,7 @@
-package crad
+package hli
 
 const (
-	header = "#?CRAD"
+	header = "HLi.v1"
 )
 
 const (
@@ -26,16 +26,19 @@ const (
 
 	// CompressionGzip for gzip compression
 	CompressionGzip = "gzip"
+	// CompressionZstd for Zstandard compression
+	CompressionZstd = "zstd"
 )
 
 // A Header handles all image properties.
 type Header struct {
-	Width       int    `json:"width"`
-	Height      int    `json:"height"`
-	Depth       int    `json:"depth"`
-	Format      string `json:"format"`
-	RasterMode  string `json:"raster_mode"`
-	Compression string `json:"compression"`
+	Width       int               `cbor:"width"`
+	Height      int               `cbor:"height"`
+	Depth       int               `cbor:"depth"`
+	Format      string            `cbor:"format"`
+	RasterMode  string            `cbor:"raster_mode"`
+	Compression string            `cbor:"compression"`
+	Metadata    map[string]string `cbor:"metadata,omitempty"`
 }
 
 var (
@@ -73,5 +76,12 @@ var (
 		Format:      FormatLogLuv,
 		RasterMode:  RasterModeSeparately,
 		Compression: CompressionGzip,
+	}
+	// Mode6 offers the better and faster compression and quality in LogLuv that covers gamut. (quantization steps: 0.1%)
+	Mode6 = &Header{
+		Depth:       32,
+		Format:      FormatLogLuv,
+		RasterMode:  RasterModeSeparately,
+		Compression: CompressionZstd,
 	}
 )

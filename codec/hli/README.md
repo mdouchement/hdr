@@ -1,29 +1,45 @@
-# CRAD
+# HLI
 
-The CRAD is an HDR image format aimed to be simple as possible.
+The HLI is an HDR image format aimed to be simple as possible.
 
-File extension `.crad`.
+File extension `.hli`.
 
 
 ## General structure
 
-```
-#?CRAD\n
-{"width":3272,"height":1280,"depth":32,"format":"LogLuv","raster_mode":"separately","compression":"gzip"}\n
-+----------------+
-|                |
-|     Raster     |
-|                |
-+----------------+
-```
+`[magic number][1-byte header-size length][variable-length header-size][variable-length header][raster]`
 
 ### Magic number
 
-The magic number of the the CRAD is `#?CRAD` at the first line.
+The magic number of the the HLI is `HLi.v1` at the first line.
 
 ### Header
 
-The header is a one-line JSON string at the second line.
+CBOR encoded data:
+```go
+type Header struct {
+	Width       int               `cbor:"width"`
+	Height      int               `cbor:"height"`
+	Depth       int               `cbor:"depth"`
+	Format      string            `cbor:"format"`
+	RasterMode  string            `cbor:"raster_mode"`
+	Compression string            `cbor:"compression"`
+	Metadata    map[string]string `cbor:"metadata,omitempty"`
+}
+```
+> See consts.go for possible values for each field.
+
+- `metadata` is optional
+
+Default options:
+```go
+Mode6 = &hli.Header{
+    Depth:       32,
+    Format:      hli.FormatLogLuv,
+    RasterMode:  hli.RasterModeSeparately,
+    Compression: hli.CompressionZstd,
+}
+```
 
 ### Raster
 
@@ -31,24 +47,28 @@ The raster contains all the pixels of the image.
 
 #### Compression
 
-The raster is compressed with the specified algorithm in the JSON header (typically: `gzip`)
+The raster is compressed with the specified algorithm in the header (typically: `gzip`)
+
+Supported compression:
+- `gzip`
+- `zstd` (default)
 
 #### Format
 
-- RGBE and XYZE
+- `RGBE` and `XYZE`
 
-These formats are based on the Radiance RGBE enconding.
+These formats are based on the Radiance RGBE encoding.
 A pixel is stored on a 4-byte representation where three 8-bit mantissas shared a common 8-bit exponent.
 It offers a very compact storage of 32-bit floating points.
 The net result is a format that has an absolute accuracy of about 1%, covering a range of over 76 orders of magnitude.
 
-- RGB and XYZ
+- `RGB` and `XYZ`
 
 These formats are based on the representation of a 32-bit floating points in bytes.
 A pixel is stored on a 12-byte representation where a channel is coded on 4 bytes in little endian order.
 It offers a great absolute accuracy.
 
-- LogLuv (used as default format)
+- `LogLuv` (used as default format)
 
 This format is based on the LogLuv Encoding for Full Gamut.
 A pixel is stored on a 4-byte representation where a channel is coded on 4 bytes in.
@@ -62,7 +82,7 @@ A pixel is stored on a 4-byte representation where a channel is coded on 4 bytes
  S       Le           ue       ve
 
 
-# CRAD LogLuv representation
+# HLI LogLuv representation
 
     8        8        8        8
 |--------+---------|--------+--------|
@@ -76,7 +96,7 @@ It offers a great compression and with an absolute accuracy of about 0.3%, cover
 
 Uncompressed `Raster` is stored in several modes:
 
-- Normal mode
+- `normal` mode
 
 Each pixels' bytes are stored in contiguous order.
 
@@ -100,7 +120,7 @@ SLeleueveSLeleueveSLeleueve
 SLeleueveSLeleueveSLeleueve
 ```
 
-- Separately mode
+- `separately` mode
 
 The color channels are stored separately in order to improve the compression ratio.
 
