@@ -1,11 +1,11 @@
-package crad
+package hli
 
 import (
 	"bufio"
 	"encoding/binary"
-	"encoding/json"
 	"io"
 
+	"github.com/fxamacker/cbor/v2"
 	"github.com/mdouchement/hdr"
 	"github.com/mdouchement/hdr/format"
 	"github.com/mdouchement/hdr/hdrcolor"
@@ -102,18 +102,21 @@ func (e *encoder) configureHeader() error {
 }
 
 func (e *encoder) writeHeader() error {
-	_, err := io.WriteString(e.w, header+"\n")
+	_, err := e.w.Write(append([]byte(header))) // magic number
 	if err != nil {
 		return err
 	}
 
-	raw, err := json.Marshal(e.h)
+	header, err := cbor.Marshal(e.h)
 	if err != nil {
 		return err
 	}
 
-	_, err = e.w.Write(append(raw, '\n'))
+	size := lengthToBytes(len(header)) // variable-length header-size
+	l := byte(len(size))               // 1-byte header-size length
+	size = append([]byte{l}, size...)
 
+	_, err = e.w.Write(append(size, header...))
 	return err
 }
 
@@ -168,7 +171,7 @@ func (e *encoder) encodeSeparately(w compresserWriter) error {
 
 // Encode writes the Image m to w in CRAD format.
 func Encode(w io.Writer, m hdr.Image) error {
-	return EncodeWithOptions(w, m, Mode5)
+	return EncodeWithOptions(w, m, Mode6)
 }
 
 // EncodeWithOptions writes the Image m to w in CRAD format.

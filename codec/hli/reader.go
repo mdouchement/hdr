@@ -1,12 +1,12 @@
-package crad
+package hli
 
 import (
 	"bufio"
 	"encoding/binary"
-	"encoding/json"
 	"image"
 	"io"
 
+	"github.com/fxamacker/cbor/v2"
 	"github.com/mdouchement/hdr"
 	"github.com/mdouchement/hdr/format"
 	"github.com/mdouchement/hdr/hdrcolor"
@@ -36,20 +36,30 @@ func newDecoder(r io.Reader) (*decoder, error) {
 //--------------------------------------//
 
 func (d *decoder) parseHeader() error {
-	magic, err := readUntil(d.r, '\n')
+	magic, err := readN(d.r, len(header)) // magic number
 	if err != nil {
 		return err
 	}
-	if magic != header {
+	if string(magic) != header {
 		return FormatError("format not compatible")
 	}
 
-	h, err := readUntil(d.r, '\n')
+	l, err := readN(d.r, 1) // 1-byte header-size length
 	if err != nil {
 		return err
 	}
 
-	if err := json.Unmarshal([]byte(h), d.h); err != nil {
+	size, err := readN(d.r, int(l[0])) // variable-length header-size
+	if err != nil {
+		return err
+	}
+
+	header, err := readN(d.r, bytesToLength(size))
+	if err != nil {
+		return err
+	}
+
+	if err := cbor.Unmarshal(header, d.h); err != nil {
 		return err
 	}
 	d.cr = newCompresserReader(d.r, d.h)
@@ -155,6 +165,15 @@ func (d *decoder) decodeSeparately(dst image.Image, y int, scanline []byte) {
 // Reader                               //
 //--------------------------------------//
 
+// DecodeHeader returns the Header without decoding the entire image.
+func DecodeHeader(r io.Reader) (Header, error) {
+	d, err := newDecoder(r)
+	if err != nil {
+		return Header{}, err
+	}
+	return *d.h, nil
+}
+
 // DecodeConfig returns the color model and dimensions of a RGBE image without
 // decoding the entire image.
 func DecodeConfig(r io.Reader) (image.Config, error) {
@@ -209,5 +228,5 @@ func Decode(r io.Reader) (img image.Image, err error) {
 }
 
 func init() {
-	image.RegisterFormat("crad", header, Decode, DecodeConfig)
+	image.RegisterFormat("hli", header, Decode, DecodeConfig)
 }
