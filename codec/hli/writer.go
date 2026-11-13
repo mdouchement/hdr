@@ -102,7 +102,7 @@ func (e *encoder) configureHeader() error {
 }
 
 func (e *encoder) writeHeader() error {
-	_, err := e.w.Write(append([]byte(header))) // magic number
+	_, err := e.w.Write([]byte(header)) // magic number
 	if err != nil {
 		return err
 	}
@@ -132,7 +132,6 @@ func (e *encoder) encode(w compresserWriter) error {
 		for x := 0; x < d.X; x++ {
 			pixel := e.bytesAt(x, y)
 			_, err = w.Write(pixel)
-
 			if err != nil {
 				return err
 			}
@@ -160,7 +159,6 @@ func (e *encoder) encodeSeparately(w compresserWriter) error {
 			}
 		}
 		_, err = w.Write(writeline)
-
 		if err != nil {
 			return err
 		}
